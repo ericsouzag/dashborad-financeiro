@@ -325,7 +325,7 @@ const firebaseConfig={
   messagingSenderId:"1075332417970",
   appId:"1:1075332417970:web:2869277695d0bde3b6fcab"};
 const DEMO_EMAIL="demo@teste.com", DEMO_PWD="demo123", C6_PDF_PWD="115340";
-const SKIP=["2025-09","2025-12"];
+const SKIP=["2025-09","2025-12","2026-02"];
 const app=initializeApp(firebaseConfig), auth=getAuth(app), db=getFirestore(app);
 
 /* ═══ GRUPOS ═══
@@ -1914,7 +1914,10 @@ function dash(){
   kpi("Total líquido — "+ml(last.id),brl(last.liquido),
    pm?`${dl>0?"▲ +":"▼ "}${dl.toFixed(1)}% vs ${ml(pm.id)}`:"primeiro mês",pm?(dl>0?"up":"dn"):"")+
   kpi("Com investimentos",brl(last.comInv),`investido: ${brl(last.inv)}`,"",1)+
-  kpi("Média mensal",brl(avg),`${u.length} meses${(()=>{const sk=S.months.filter(m=>SKIP.includes(m.id)).map(m=>ml(m.id));return sk.length?" · "+sk.join(" e ")+" fora":""})()}`,"")+
+  kpi("Média mensal",brl(avg),`${u.length} meses${(()=>{const sk=S.months.filter(m=>SKIP.includes(m.id)).map(m=>ml(m.id));
+    if(!sk.length)return"";
+    const list=sk.length>1?sk.slice(0,-1).join(", ")+" e "+sk[sk.length-1]:sk[0];
+    return" · "+list+" fora"})()}`,"")+
   kpi("Contra a média",`${vsAvg>=0?"+":""}${brl(vsAvg)}`,
    vsAvg>0?"acima do seu padrão":"abaixo do seu padrão",vsAvg>0?"up":"dn",1);
 

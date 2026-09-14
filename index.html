@@ -290,7 +290,8 @@ select.mini{padding:6px 9px;font-size:12.5px;min-width:150px}
 
     <section id="v-hist" class="view hide">
       <div class="head"><div><div class="eyebrow">meses salvos</div><h1>Histórico</h1></div>
-        <button class="ghost mini hide" id="bSeed">Importar histórico da planilha</button></div>
+        <button class="ghost mini hide" id="bSeed">Importar histórico da planilha</button>
+        <button class="ghost mini hide" id="bResetDemo">Recarregar dados fictícios de demonstração</button></div>
       <div class="glass panel"><div class="tw"><table id="tHist"></table></div></div>
     </section>
   </main>
@@ -552,6 +553,986 @@ const SEED={
 }
 };
 
+/* ═══ DEMO — persona e dados 100% fictícios (nunca os dados reais do dono) ═══ */
+const SCHEMA_DEMO=[
+ {k:"nu",    l:"Nubank — fatura do cartão", g:"cartao", auto:"__TOTAL__"},
+ {k:"inter", l:"Inter — fatura do cartão",  g:"cartao"},
+ {k:"divisao", l:"Divisão do aluguel (colega de apê)", g:"recebido"},
+ {k:"seguroAuto", l:"Seguro do carro",     g:"seguros", auto:"SEGURO AUTO|PORTO SEGURO"},
+ {k:"seguroCel",  l:"Seguro do celular",   g:"seguros", auto:"SEGURO CEL"},
+ {k:"strVideo", l:"Vídeo e música", g:"streams",
+   auto:"NETFLIX|SPOTIFY|PRIME VIDEO|DISNEY|DEEZER|YOUTUBE|GLOBOPLAY"},
+ {k:"strIA",    l:"Inteligências artificiais", g:"streams",
+   auto:"OPENAI|CHATGPT|GEMINI|COPILOT|PERPLEXITY"},
+ {k:"aluguel",   l:"Aluguel",            g:"recorrente"},
+ {k:"internet",  l:"Internet",           g:"recorrente"},
+ {k:"energia",   l:"Energia elétrica",   g:"recorrente"},
+ {k:"celular",   l:"Plano do celular",   g:"recorrente"},
+ {k:"academia",  l:"Academia",           g:"recorrente"},
+ {k:"faculdade", l:"Mensalidade do curso", g:"recorrente"},
+ {k:"roupas",     l:"Roupas",            g:"naoRecorrente"},
+ {k:"presentes",  l:"Presentes",         g:"naoRecorrente"},
+ {k:"manutencao", l:"Manutenção do carro", g:"naoRecorrente"},
+ {k:"clubinho", l:"Clube recreativo", g:"naoAbatido"},
+ {k:"investimentos", l:"Investimentos", g:"inv"},
+];
+const SEED_DEMO={
+ "2025-10": {
+  "nu": 2823.08,
+  "inter": 162.51,
+  "divisao": 555.8,
+  "seguroAuto": 191.55,
+  "seguroCel": 48.53,
+  "strVideo": 90.69,
+  "strIA": 66.96,
+  "aluguel": 1492.19,
+  "internet": 90.6,
+  "energia": 114.98,
+  "celular": 57.63,
+  "academia": 91.06,
+  "faculdade": 370.98,
+  "clubinho": 56.19,
+  "investimentos": 303.9
+ },
+ "2025-11": {
+  "nu": 3089.31,
+  "inter": 499.07,
+  "divisao": 538.87,
+  "seguroAuto": 207.0,
+  "seguroCel": 41.73,
+  "strVideo": 58.71,
+  "strIA": 67.74,
+  "aluguel": 1534.75,
+  "internet": 102.07,
+  "energia": 209.14,
+  "celular": 63.24,
+  "academia": 111.45,
+  "roupas": 279.06,
+  "manutencao": 327.85,
+  "clubinho": 54.09,
+  "investimentos": 327.49
+ },
+ "2026-01": {
+  "nu": 2164.64,
+  "inter": 294.69,
+  "seguroAuto": 156.3,
+  "seguroCel": 37.02,
+  "strVideo": 66.12,
+  "strIA": 110.85,
+  "aluguel": 1486.48,
+  "internet": 97.4,
+  "energia": 113.52,
+  "celular": 51.67,
+  "academia": 127.47,
+  "clubinho": 47.59,
+  "investimentos": 893.71
+ },
+ "2026-02": {
+  "nu": 2824.0,
+  "inter": 428.47,
+  "divisao": 710.71,
+  "seguroAuto": 194.32,
+  "seguroCel": 39.58,
+  "strVideo": 56.28,
+  "strIA": 85.24,
+  "aluguel": 1476.77,
+  "internet": 94.22,
+  "energia": 230.87,
+  "celular": 66.91,
+  "academia": 102.59,
+  "roupas": 190.12,
+  "clubinho": 51.23,
+  "investimentos": 457.64
+ },
+ "2026-03": {
+  "nu": 2735.34,
+  "inter": 598.91,
+  "divisao": 554.83,
+  "seguroAuto": 209.83,
+  "seguroCel": 45.19,
+  "strVideo": 58.64,
+  "strIA": 63.77,
+  "aluguel": 1460.96,
+  "internet": 102.55,
+  "energia": 206.73,
+  "celular": 55.55,
+  "academia": 92.54,
+  "faculdade": 419.46,
+  "presentes": 223.55,
+  "clubinho": 54.41,
+  "investimentos": 709.03
+ },
+ "2026-04": {
+  "nu": 2659.15,
+  "inter": 283.41,
+  "divisao": 527.89,
+  "seguroAuto": 170.43,
+  "seguroCel": 44.07,
+  "strVideo": 93.15,
+  "strIA": 130.07,
+  "aluguel": 1476.34,
+  "internet": 100.01,
+  "energia": 108.58,
+  "celular": 67.82,
+  "academia": 124.82,
+  "faculdade": 369.45,
+  "roupas": 116.68,
+  "presentes": 162.48,
+  "manutencao": 310.93,
+  "clubinho": 40.01,
+  "investimentos": 494.49
+ },
+ "2026-05": {
+  "nu": 1831.16,
+  "inter": 614.55,
+  "divisao": 707.92,
+  "seguroAuto": 161.53,
+  "seguroCel": 36.16,
+  "strVideo": 90.12,
+  "strIA": 135.76,
+  "aluguel": 1458.57,
+  "internet": 99.72,
+  "energia": 91.07,
+  "celular": 64.02,
+  "academia": 120.63,
+  "faculdade": 346.54,
+  "manutencao": 272.33,
+  "clubinho": 44.24,
+  "investimentos": 623.58
+ },
+ "2026-06": {
+  "nu": 2967.89,
+  "inter": 250.58,
+  "divisao": 748.79,
+  "seguroAuto": 185.49,
+  "seguroCel": 43.76,
+  "strVideo": 75.7,
+  "strIA": 69.68,
+  "aluguel": 1472.47,
+  "internet": 96.76,
+  "energia": 174.13,
+  "celular": 50.75,
+  "academia": 98.81,
+  "faculdade": 368.35,
+  "presentes": 223.33,
+  "clubinho": 44.76,
+  "investimentos": 701.39
+ },
+ "2026-07": {
+  "nu": 2142.78,
+  "inter": 216.16,
+  "divisao": 642.76,
+  "seguroAuto": 173.09,
+  "seguroCel": 50.69,
+  "strVideo": 87.3,
+  "strIA": 75.23,
+  "aluguel": 1459.69,
+  "internet": 98.62,
+  "energia": 147.77,
+  "celular": 56.68,
+  "academia": 119.16,
+  "clubinho": 57.23,
+  "investimentos": 449.19
+ },
+ "2026-08": {
+  "nu": 2104.33,
+  "inter": 374.31,
+  "divisao": 569.64,
+  "seguroAuto": 157.49,
+  "seguroCel": 53.47,
+  "strVideo": 72.73,
+  "strIA": 128.91,
+  "aluguel": 1505.03,
+  "internet": 91.01,
+  "energia": 239.89,
+  "celular": 65.9,
+  "academia": 128.76,
+  "clubinho": 48.02,
+  "investimentos": 335.18
+ }
+};
+const DEMO_BOLETOS={
+ "2026-03": {
+  "transactions": [
+   {
+    "date": "02 mar",
+    "description": "MERCADO BOM PRECO",
+    "installment": null,
+    "amount": 222.98,
+    "category": "Supermercado"
+   },
+   {
+    "date": "10 mar",
+    "description": "LOJA MODA CERTA",
+    "installment": null,
+    "amount": 133.39,
+    "category": "Vestuário / Loja"
+   },
+   {
+    "date": "18 mar",
+    "description": "POUSADA VISTA VERDE",
+    "installment": null,
+    "amount": 77.25,
+    "category": "Viagem / Hospedagem"
+   },
+   {
+    "date": "10 mar",
+    "description": "COMPRA FACIL WEB",
+    "installment": null,
+    "amount": 202.47,
+    "category": "Compras online"
+   },
+   {
+    "date": "04 mar",
+    "description": "LOJA MODA CERTA",
+    "installment": null,
+    "amount": 84.68,
+    "category": "Vestuário / Loja"
+   },
+   {
+    "date": "12 mar",
+    "description": "CURSO ONLINE PRO",
+    "installment": null,
+    "amount": 163.84,
+    "category": "Assinaturas / Cursos"
+   },
+   {
+    "date": "23 mar",
+    "description": "COMPRA FACIL WEB",
+    "installment": null,
+    "amount": 216.79,
+    "category": "Compras online"
+   },
+   {
+    "date": "02 mar",
+    "description": "COMPRA FACIL WEB",
+    "installment": null,
+    "amount": 104.21,
+    "category": "Compras online"
+   },
+   {
+    "date": "16 mar",
+    "description": "CURSO ONLINE PRO",
+    "installment": null,
+    "amount": 83.35,
+    "category": "Assinaturas / Cursos"
+   },
+   {
+    "date": "25 mar",
+    "description": "DIVERSOS LOJA X",
+    "installment": null,
+    "amount": 137.17,
+    "category": "Transferências / Diversos"
+   },
+   {
+    "date": "19 mar",
+    "description": "DOCERIA CANTINHO",
+    "installment": null,
+    "amount": 108.41,
+    "category": "Padaria / Doces"
+   },
+   {
+    "date": "10 mar",
+    "description": "SPOTIFY",
+    "installment": null,
+    "amount": 158.69,
+    "category": "Streaming / Plataformas"
+   },
+   {
+    "date": "23 mar",
+    "description": "FARMA VIDA",
+    "installment": null,
+    "amount": 79.0,
+    "category": "Farmácia"
+   },
+   {
+    "date": "19 mar",
+    "description": "FARMA VIDA",
+    "installment": null,
+    "amount": 161.03,
+    "category": "Farmácia"
+   },
+   {
+    "date": "11 mar",
+    "description": "OFICINA CENTRO AUTO",
+    "installment": null,
+    "amount": 222.91,
+    "category": "Auto / Combustível"
+   },
+   {
+    "date": "20 mar",
+    "description": "SPOTIFY",
+    "installment": null,
+    "amount": 171.59,
+    "category": "Streaming / Plataformas"
+   },
+   {
+    "date": "17 mar",
+    "description": "LOJA VIRTUAL XPRESS",
+    "installment": null,
+    "amount": 163.87,
+    "category": "Compras online"
+   },
+   {
+    "date": "25 mar",
+    "description": "POUSADA VISTA VERDE",
+    "installment": null,
+    "amount": 79.45,
+    "category": "Viagem / Hospedagem"
+   },
+   {
+    "date": "16 mar",
+    "description": "PADARIA SABOR DO DIA",
+    "installment": null,
+    "amount": 164.26,
+    "category": "Padaria / Doces"
+   }
+  ],
+  "total": 2735.34
+ },
+ "2026-04": {
+  "transactions": [
+   {
+    "date": "01 abr",
+    "description": "VIAGENS BR TUR",
+    "installment": null,
+    "amount": 60.49,
+    "category": "Viagem / Hospedagem"
+   },
+   {
+    "date": "06 abr",
+    "description": "SPOTIFY",
+    "installment": null,
+    "amount": 141.83,
+    "category": "Streaming / Plataformas"
+   },
+   {
+    "date": "16 abr",
+    "description": "CURSO ONLINE PRO",
+    "installment": null,
+    "amount": 154.29,
+    "category": "Assinaturas / Cursos"
+   },
+   {
+    "date": "25 abr",
+    "description": "MERCADO BOM PRECO",
+    "installment": null,
+    "amount": 129.52,
+    "category": "Supermercado"
+   },
+   {
+    "date": "24 abr",
+    "description": "POSTO ALFA COMB",
+    "installment": null,
+    "amount": 168.63,
+    "category": "Auto / Combustível"
+   },
+   {
+    "date": "13 abr",
+    "description": "DROGARIA SAO LUCAS",
+    "installment": null,
+    "amount": 95.99,
+    "category": "Farmácia"
+   },
+   {
+    "date": "06 abr",
+    "description": "NETFLIX",
+    "installment": null,
+    "amount": 145.33,
+    "category": "Streaming / Plataformas"
+   },
+   {
+    "date": "18 abr",
+    "description": "SPOTIFY",
+    "installment": null,
+    "amount": 132.28,
+    "category": "Streaming / Plataformas"
+   },
+   {
+    "date": "27 abr",
+    "description": "POSTO ALFA COMB",
+    "installment": null,
+    "amount": 130.41,
+    "category": "Auto / Combustível"
+   },
+   {
+    "date": "23 abr",
+    "description": "VIAGENS BR TUR",
+    "installment": null,
+    "amount": 114.42,
+    "category": "Viagem / Hospedagem"
+   },
+   {
+    "date": "22 abr",
+    "description": "VIAGENS BR TUR",
+    "installment": null,
+    "amount": 164.04,
+    "category": "Viagem / Hospedagem"
+   },
+   {
+    "date": "05 abr",
+    "description": "POUSADA VISTA VERDE",
+    "installment": null,
+    "amount": 177.58,
+    "category": "Viagem / Hospedagem"
+   },
+   {
+    "date": "05 abr",
+    "description": "LOJA VIRTUAL XPRESS",
+    "installment": null,
+    "amount": 116.73,
+    "category": "Compras online"
+   },
+   {
+    "date": "01 abr",
+    "description": "FARMA VIDA",
+    "installment": null,
+    "amount": 141.31,
+    "category": "Farmácia"
+   },
+   {
+    "date": "06 abr",
+    "description": "OPENAI CHATGPT",
+    "installment": null,
+    "amount": 63.27,
+    "category": "Streaming / Plataformas"
+   },
+   {
+    "date": "01 abr",
+    "description": "OFICINA CENTRO AUTO",
+    "installment": null,
+    "amount": 146.13,
+    "category": "Auto / Combustível"
+   },
+   {
+    "date": "18 abr",
+    "description": "AGROPECUARIA BOM PET",
+    "installment": null,
+    "amount": 139.1,
+    "category": "Pet / Agropecuária"
+   },
+   {
+    "date": "05 abr",
+    "description": "DOCERIA CANTINHO",
+    "installment": null,
+    "amount": 183.84,
+    "category": "Padaria / Doces"
+   },
+   {
+    "date": "15 abr",
+    "description": "LOJA MODA CERTA",
+    "installment": null,
+    "amount": 161.71,
+    "category": "Vestuário / Loja"
+   },
+   {
+    "date": "13 abr",
+    "description": "DIVERSOS LOJA X",
+    "installment": null,
+    "amount": 92.25,
+    "category": "Transferências / Diversos"
+   }
+  ],
+  "total": 2659.15
+ },
+ "2026-05": {
+  "transactions": [
+   {
+    "date": "15 mai",
+    "description": "MERCADO ONLINE BR",
+    "installment": null,
+    "amount": 82.49,
+    "category": "Compras online"
+   },
+   {
+    "date": "10 mai",
+    "description": "SPOTIFY",
+    "installment": null,
+    "amount": 91.25,
+    "category": "Streaming / Plataformas"
+   },
+   {
+    "date": "04 mai",
+    "description": "LOJA VIRTUAL XPRESS",
+    "installment": null,
+    "amount": 83.12,
+    "category": "Compras online"
+   },
+   {
+    "date": "16 mai",
+    "description": "DOCERIA CANTINHO",
+    "installment": null,
+    "amount": 62.08,
+    "category": "Padaria / Doces"
+   },
+   {
+    "date": "07 mai",
+    "description": "PET CASA FELIZ",
+    "installment": null,
+    "amount": 141.7,
+    "category": "Pet / Agropecuária"
+   },
+   {
+    "date": "05 mai",
+    "description": "CALCADOS BOA SORTE",
+    "installment": null,
+    "amount": 87.15,
+    "category": "Vestuário / Loja"
+   },
+   {
+    "date": "25 mai",
+    "description": "LOJA MODA CERTA",
+    "installment": null,
+    "amount": 53.99,
+    "category": "Vestuário / Loja"
+   },
+   {
+    "date": "21 mai",
+    "description": "CALCADOS BOA SORTE",
+    "installment": null,
+    "amount": 103.2,
+    "category": "Vestuário / Loja"
+   },
+   {
+    "date": "28 mai",
+    "description": "COMPRA FACIL WEB",
+    "installment": null,
+    "amount": 53.24,
+    "category": "Compras online"
+   },
+   {
+    "date": "06 mai",
+    "description": "OFICINA CENTRO AUTO",
+    "installment": null,
+    "amount": 99.8,
+    "category": "Auto / Combustível"
+   },
+   {
+    "date": "18 mai",
+    "description": "PADARIA SABOR DO DIA",
+    "installment": null,
+    "amount": 96.77,
+    "category": "Padaria / Doces"
+   },
+   {
+    "date": "21 mai",
+    "description": "CALCADOS BOA SORTE",
+    "installment": null,
+    "amount": 138.12,
+    "category": "Vestuário / Loja"
+   },
+   {
+    "date": "26 mai",
+    "description": "FARMA VIDA",
+    "installment": null,
+    "amount": 104.51,
+    "category": "Farmácia"
+   },
+   {
+    "date": "24 mai",
+    "description": "DROGARIA SAO LUCAS",
+    "installment": null,
+    "amount": 50.02,
+    "category": "Farmácia"
+   },
+   {
+    "date": "17 mai",
+    "description": "FARMA VIDA",
+    "installment": null,
+    "amount": 63.82,
+    "category": "Farmácia"
+   },
+   {
+    "date": "24 mai",
+    "description": "SPOTIFY",
+    "installment": null,
+    "amount": 80.69,
+    "category": "Streaming / Plataformas"
+   },
+   {
+    "date": "26 mai",
+    "description": "MERCADO BOM PRECO",
+    "installment": null,
+    "amount": 106.58,
+    "category": "Supermercado"
+   },
+   {
+    "date": "09 mai",
+    "description": "OFICINA CENTRO AUTO",
+    "installment": null,
+    "amount": 138.77,
+    "category": "Auto / Combustível"
+   },
+   {
+    "date": "15 mai",
+    "description": "DROGARIA SAO LUCAS",
+    "installment": null,
+    "amount": 103.36,
+    "category": "Farmácia"
+   },
+   {
+    "date": "03 mai",
+    "description": "DOCERIA CANTINHO",
+    "installment": null,
+    "amount": 90.5,
+    "category": "Padaria / Doces"
+   }
+  ],
+  "total": 1831.16
+ },
+ "2026-06": {
+  "transactions": [
+   {
+    "date": "03 jun",
+    "description": "DIVERSOS LOJA X",
+    "installment": null,
+    "amount": 100.02,
+    "category": "Transferências / Diversos"
+   },
+   {
+    "date": "13 jun",
+    "description": "VIAGENS BR TUR",
+    "installment": null,
+    "amount": 169.35,
+    "category": "Viagem / Hospedagem"
+   },
+   {
+    "date": "06 jun",
+    "description": "COMPRA FACIL WEB",
+    "installment": null,
+    "amount": 144.41,
+    "category": "Compras online"
+   },
+   {
+    "date": "01 jun",
+    "description": "PET CASA FELIZ",
+    "installment": null,
+    "amount": 171.72,
+    "category": "Pet / Agropecuária"
+   },
+   {
+    "date": "26 jun",
+    "description": "AGROPECUARIA BOM PET",
+    "installment": null,
+    "amount": 266.43,
+    "category": "Pet / Agropecuária"
+   },
+   {
+    "date": "20 jun",
+    "description": "PIX TRANSFERENCIA",
+    "installment": null,
+    "amount": 195.77,
+    "category": "Transferências / Diversos"
+   },
+   {
+    "date": "22 jun",
+    "description": "ESCOLA IDIOMA PLUS",
+    "installment": null,
+    "amount": 81.12,
+    "category": "Assinaturas / Cursos"
+   },
+   {
+    "date": "18 jun",
+    "description": "PADARIA SABOR DO DIA",
+    "installment": null,
+    "amount": 252.1,
+    "category": "Padaria / Doces"
+   },
+   {
+    "date": "01 jun",
+    "description": "LOJA MODA CERTA",
+    "installment": null,
+    "amount": 145.59,
+    "category": "Vestuário / Loja"
+   },
+   {
+    "date": "21 jun",
+    "description": "ATACADAO CENTRAL",
+    "installment": null,
+    "amount": 201.96,
+    "category": "Supermercado"
+   },
+   {
+    "date": "24 jun",
+    "description": "COMPRA FACIL WEB",
+    "installment": null,
+    "amount": 238.05,
+    "category": "Compras online"
+   },
+   {
+    "date": "28 jun",
+    "description": "AGROPECUARIA BOM PET",
+    "installment": null,
+    "amount": 103.36,
+    "category": "Pet / Agropecuária"
+   },
+   {
+    "date": "01 jun",
+    "description": "FARMA VIDA",
+    "installment": null,
+    "amount": 153.98,
+    "category": "Farmácia"
+   },
+   {
+    "date": "10 jun",
+    "description": "POSTO ALFA COMB",
+    "installment": null,
+    "amount": 214.85,
+    "category": "Auto / Combustível"
+   },
+   {
+    "date": "25 jun",
+    "description": "LOJA MODA CERTA",
+    "installment": null,
+    "amount": 118.33,
+    "category": "Vestuário / Loja"
+   },
+   {
+    "date": "09 jun",
+    "description": "ESCOLA IDIOMA PLUS",
+    "installment": null,
+    "amount": 248.3,
+    "category": "Assinaturas / Cursos"
+   },
+   {
+    "date": "27 jun",
+    "description": "CALCADOS BOA SORTE",
+    "installment": null,
+    "amount": 162.55,
+    "category": "Vestuário / Loja"
+   }
+  ],
+  "total": 2967.89
+ },
+ "2026-07": {
+  "transactions": [
+   {
+    "date": "20 jul",
+    "description": "AGROPECUARIA BOM PET",
+    "installment": null,
+    "amount": 64.62,
+    "category": "Pet / Agropecuária"
+   },
+   {
+    "date": "02 jul",
+    "description": "COMPRA FACIL WEB",
+    "installment": null,
+    "amount": 154.25,
+    "category": "Compras online"
+   },
+   {
+    "date": "26 jul",
+    "description": "DOCERIA CANTINHO",
+    "installment": null,
+    "amount": 175.08,
+    "category": "Padaria / Doces"
+   },
+   {
+    "date": "02 jul",
+    "description": "COMPRA FACIL WEB",
+    "installment": null,
+    "amount": 144.03,
+    "category": "Compras online"
+   },
+   {
+    "date": "09 jul",
+    "description": "FARMA VIDA",
+    "installment": null,
+    "amount": 164.17,
+    "category": "Farmácia"
+   },
+   {
+    "date": "17 jul",
+    "description": "MERCADO BOM PRECO",
+    "installment": null,
+    "amount": 124.79,
+    "category": "Supermercado"
+   },
+   {
+    "date": "01 jul",
+    "description": "OPENAI CHATGPT",
+    "installment": null,
+    "amount": 165.76,
+    "category": "Streaming / Plataformas"
+   },
+   {
+    "date": "11 jul",
+    "description": "MERCADO ONLINE BR",
+    "installment": null,
+    "amount": 172.5,
+    "category": "Compras online"
+   },
+   {
+    "date": "23 jul",
+    "description": "CURSO ONLINE PRO",
+    "installment": null,
+    "amount": 73.84,
+    "category": "Assinaturas / Cursos"
+   },
+   {
+    "date": "17 jul",
+    "description": "OFICINA CENTRO AUTO",
+    "installment": null,
+    "amount": 76.62,
+    "category": "Auto / Combustível"
+   },
+   {
+    "date": "17 jul",
+    "description": "CALCADOS BOA SORTE",
+    "installment": null,
+    "amount": 123.97,
+    "category": "Vestuário / Loja"
+   },
+   {
+    "date": "18 jul",
+    "description": "DROGARIA SAO LUCAS",
+    "installment": null,
+    "amount": 171.79,
+    "category": "Farmácia"
+   },
+   {
+    "date": "05 jul",
+    "description": "DROGARIA SAO LUCAS",
+    "installment": null,
+    "amount": 159.08,
+    "category": "Farmácia"
+   },
+   {
+    "date": "13 jul",
+    "description": "POUSADA VISTA VERDE",
+    "installment": null,
+    "amount": 136.91,
+    "category": "Viagem / Hospedagem"
+   },
+   {
+    "date": "03 jul",
+    "description": "SPOTIFY",
+    "installment": null,
+    "amount": 159.02,
+    "category": "Streaming / Plataformas"
+   },
+   {
+    "date": "14 jul",
+    "description": "PIX TRANSFERENCIA",
+    "installment": null,
+    "amount": 76.35,
+    "category": "Transferências / Diversos"
+   }
+  ],
+  "total": 2142.78
+ },
+ "2026-08": {
+  "transactions": [
+   {
+    "date": "23 ago",
+    "description": "FARMA VIDA",
+    "installment": null,
+    "amount": 102.18,
+    "category": "Farmácia"
+   },
+   {
+    "date": "11 ago",
+    "description": "VIAGENS BR TUR",
+    "installment": null,
+    "amount": 116.53,
+    "category": "Viagem / Hospedagem"
+   },
+   {
+    "date": "12 ago",
+    "description": "POUSADA VISTA VERDE",
+    "installment": null,
+    "amount": 87.78,
+    "category": "Viagem / Hospedagem"
+   },
+   {
+    "date": "24 ago",
+    "description": "PADARIA SABOR DO DIA",
+    "installment": null,
+    "amount": 192.08,
+    "category": "Padaria / Doces"
+   },
+   {
+    "date": "11 ago",
+    "description": "PADARIA SABOR DO DIA",
+    "installment": null,
+    "amount": 217.98,
+    "category": "Padaria / Doces"
+   },
+   {
+    "date": "15 ago",
+    "description": "CALCADOS BOA SORTE",
+    "installment": null,
+    "amount": 170.81,
+    "category": "Vestuário / Loja"
+   },
+   {
+    "date": "11 ago",
+    "description": "SUPERMERCADO SAO JOSE",
+    "installment": null,
+    "amount": 126.63,
+    "category": "Supermercado"
+   },
+   {
+    "date": "17 ago",
+    "description": "CALCADOS BOA SORTE",
+    "installment": null,
+    "amount": 108.62,
+    "category": "Vestuário / Loja"
+   },
+   {
+    "date": "26 ago",
+    "description": "LOJA VIRTUAL XPRESS",
+    "installment": null,
+    "amount": 90.16,
+    "category": "Compras online"
+   },
+   {
+    "date": "03 ago",
+    "description": "FARMA VIDA",
+    "installment": null,
+    "amount": 142.81,
+    "category": "Farmácia"
+   },
+   {
+    "date": "02 ago",
+    "description": "OFICINA CENTRO AUTO",
+    "installment": null,
+    "amount": 187.26,
+    "category": "Auto / Combustível"
+   },
+   {
+    "date": "25 ago",
+    "description": "AGROPECUARIA BOM PET",
+    "installment": null,
+    "amount": 83.28,
+    "category": "Pet / Agropecuária"
+   },
+   {
+    "date": "28 ago",
+    "description": "AGROPECUARIA BOM PET",
+    "installment": null,
+    "amount": 209.29,
+    "category": "Pet / Agropecuária"
+   },
+   {
+    "date": "13 ago",
+    "description": "DIVERSOS LOJA X",
+    "installment": null,
+    "amount": 94.23,
+    "category": "Transferências / Diversos"
+   },
+   {
+    "date": "23 ago",
+    "description": "AGROPECUARIA BOM PET",
+    "installment": null,
+    "amount": 174.69,
+    "category": "Pet / Agropecuária"
+   }
+  ],
+  "total": 2104.33
+ }
+};
+
 let S={uid:null,kind:null,months:[],boletos:[],schema:null,tx:null,edit:null};
 const $=i=>document.getElementById(i);
 const brl=n=>(n||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
@@ -613,6 +1594,7 @@ onAuthStateChanged(auth,async u=>{
  $("login").classList.add("hide");$("app").classList.remove("hide");
  mode();await reload();
  if(S.kind==="owner"&&!S.months.length)await seed();
+ if(S.kind==="demo"&&!S.months.length)await seedDemo();
 });
 function mode(){
  const L={owner:"conta pessoal",demo:"demonstração",visitor:"painel de teste"};
@@ -624,6 +1606,7 @@ function mode(){
  $("dzHint").textContent=S.kind==="owner"?"A senha do arquivo é aplicada automaticamente."
   :"Se o seu PDF tiver senha, informe no campo acima.";
  $("bSeed").classList.toggle("hide",S.kind!=="owner");
+ $("bResetDemo").classList.toggle("hide",S.kind!=="demo");
 }
 
 /* ═══ DADOS ═══ */
@@ -653,6 +1636,22 @@ async function seed(){
  }catch(e){toast(dberr(e),"no")}
 }
 $("bSeed").onclick=()=>{if(confirm("Isto sobrescreve os meses da planilha (Fev/25 a Fev/26) com os valores originais. Meses lançados por você fora desse intervalo não são tocados. Continuar?"))seed()};
+
+async function seedDemo(){
+ try{
+  const[mSnap,bSnap]=await Promise.all([getDocs(collection(db,"users",S.uid,"months")),
+   getDocs(collection(db,"users",S.uid,"boletos"))]);
+  const b=writeBatch(db);
+  mSnap.docs.forEach(d=>b.delete(d.ref));
+  bSnap.docs.forEach(d=>b.delete(d.ref));
+  for(const[id,f]of Object.entries(SEED_DEMO)) b.set(mref(id),{fields:f,schema:SCHEMA_DEMO,updatedAt:new Date().toISOString()});
+  for(const[id,bo]of Object.entries(DEMO_BOLETOS)) b.set(bref(id),{...bo,updatedAt:new Date().toISOString()});
+  b.set(sref(),{fields:SCHEMA_DEMO});
+  await b.commit();await reload();
+  toast(`Demonstração recarregada com ${Object.keys(SEED_DEMO).length} meses fictícios.`,"ok");
+ }catch(e){toast(dberr(e),"no")}
+}
+$("bResetDemo").onclick=()=>{if(confirm("Isto apaga os dados atuais da demonstração e recarrega com dados 100% fictícios (nenhum dado real seu). Continuar?"))seedDemo()};
 
 /* ═══ FORMULÁRIO ═══ */
 function buildForm(){
@@ -864,7 +1863,7 @@ function dash(){
   kpi("Total líquido — "+ml(last.id),brl(last.liquido),
    pm?`${dl>0?"▲ +":"▼ "}${dl.toFixed(1)}% vs ${ml(pm.id)}`:"primeiro mês",pm?(dl>0?"up":"dn"):"")+
   kpi("Com investimentos",brl(last.comInv),`investido: ${brl(last.inv)}`,"",1)+
-  kpi("Média mensal",brl(avg),`${u.length} meses · Set e Dez/25 fora`,"")+
+  kpi("Média mensal",brl(avg),`${u.length} meses${(()=>{const sk=S.months.filter(m=>SKIP.includes(m.id)).map(m=>ml(m.id));return sk.length?" · "+sk.join(" e ")+" fora":""})()}`,"")+
   kpi("Contra a média",`${vsAvg>=0?"+":""}${brl(vsAvg)}`,
    vsAvg>0?"acima do seu padrão":"abaixo do seu padrão",vsAvg>0?"up":"dn",1);
 

@@ -550,6 +550,57 @@ const SEED={
 "cemig": 160.58,
 "mei": 86.05,
 "mgnetCasa": 104.99
+},
+"2026-03": {
+"c6": 4169.94,
+"itau": 588.46,
+"gab": 588.46,
+"mgnetSalinha": 79.99,
+"vivo": 38.0,
+"cemig": 160.04,
+"consorcio": 729.34,
+"mei": 86.05,
+"mgnetCasa": 104.99,
+"copassa": 36.53,
+"claroRecarga": 20.0
+},
+"2026-05": {
+"c6": 4528.18,
+"mgnetSalinha": 79.99,
+"vivo": 44.0,
+"cemig": 245.56,
+"consorcio": 729.34,
+"mei": 86.05,
+"mgnetCasa": 104.99
+},
+"2026-06": {
+"c6": 4438.68,
+"vivo": 45.23,
+"cemig": 159.69,
+"consorcio": 539.07,
+"mei": 86.05,
+"mgnetCasa": 104.99
+},
+"2026-07": {
+"c6": 5963.77,
+"itau": 487.2,
+"marisa": 140.96,
+"mgnetSalinha": 79.99,
+"vivo": 44.0,
+"cemig": 156.1,
+"consorcio": 539.02,
+"mei": 86.05,
+"mgnetCasa": 104.99
+},
+"2026-08": {
+"c6": 5491.82,
+"vivo": 44.0,
+"cemig": 156.65,
+"consorcio": 539.07,
+"mei": 86.05,
+"mgnetCasa": 104.99,
+"copassa": 47.23,
+"claroRecarga": 20.0
 }
 };
 
@@ -1635,7 +1686,7 @@ async function seed(){
   await b.commit();await reload();toast(`${Object.keys(SEED).length} meses da planilha importados.`,"ok");
  }catch(e){toast(dberr(e),"no")}
 }
-$("bSeed").onclick=()=>{if(confirm("Isto sobrescreve os meses da planilha (Fev/25 a Fev/26) com os valores originais. Meses lançados por você fora desse intervalo não são tocados. Continuar?"))seed()};
+$("bSeed").onclick=()=>{if(confirm("Isto sobrescreve os meses da planilha (Fev/25 a Ago/26, exceto Set/25, Dez/25 e Abr/26, que não têm dados) com os valores originais. Meses lançados por você fora desse intervalo não são tocados. Continuar?"))seed()};
 
 async function seedDemo(){
  try{

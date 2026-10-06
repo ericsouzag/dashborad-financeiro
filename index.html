@@ -1819,9 +1819,12 @@ async function readPdf(file){
     rows.get(y).sort((a,b)=>a.transform[4]-b.transform[4]).map(i=>i.str).join(" ")
     .replace(/\s+/g," ").replace(/^[\u25a1\u2610\u2751\s]+/,"").trim()));
   }
-  const RX=/^(\d{2}\s[a-zç]{3})\s+(.+?)\s+([\d.]+,\d{2})$/i,tx=[];
+  const RX=/^(\d{2}\s[a-zç]{3})\s+(.+?)\s+([\d.]+,\d{2})$/i,
+   NAOGASTO=/inclus[ãa]o\s*de\s*pagamento|pagamento\s*(recebido|efetuado|da\s*fatura)/i,tx=[];
   for(const L of lines){const m=L.match(RX);if(!m)continue;
-   let d=m[2].trim();const est=/estorno/i.test(d);
+   let d=m[2].trim();
+   if(NAOGASTO.test(d))continue; // pagamento da fatura anterior, não é compra — não entra na soma
+   const est=/estorno/i.test(d);
    const par=d.match(/-\s*Parcela\s*(\d+)\/(\d+)/i);
    if(par)d=d.replace(/-\s*Parcela\s*\d+\/\d+/i,"").trim();
    const v=parseFloat(m[3].replace(/\./g,"").replace(",","."));if(isNaN(v))continue;

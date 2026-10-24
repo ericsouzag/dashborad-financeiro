@@ -214,7 +214,29 @@ input[type=date]{width:100%;background:rgba(255,255,255,.04);border:1px solid va
 #tInv td .s{display:block;font-size:11.5px;color:var(--faint);max-width:24ch;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .chk{display:flex;align-items:center;gap:9px;font-size:13.5px;color:var(--dim);margin-top:4px;cursor:pointer}
 .chk input{width:17px;height:17px;accent-color:var(--blue)}
-@media(max-width:640px){.hs{display:none}#tInv,#tInvG,#tParc,#tRat{min-width:0}#tInv td .s{max-width:15ch}}
+/* Diagrama: nota por ativo */
+.nt{font-family:var(--mono);font-size:12px;font-weight:600;padding:3px 9px;border-radius:7px;min-width:38px;border:1px solid var(--line2)}
+.nt:hover{transform:none}
+.nt.p{color:var(--gain);border-color:rgba(61,220,151,.4);background:rgba(61,220,151,.08)}
+.nt.z{color:var(--dim)}
+.nt.n{color:var(--loss);border-color:rgba(255,107,91,.4);background:rgba(255,107,91,.08)}
+.dg-ov{position:fixed;inset:0;z-index:60;background:rgba(3,5,10,.72);backdrop-filter:blur(6px);display:flex;align-items:flex-start;justify-content:center;
+  overflow-y:auto;padding:max(24px,env(safe-area-inset-top,0px)) max(14px,env(safe-area-inset-right,0px)) 24px max(14px,env(safe-area-inset-left,0px))}
+.dg{width:min(680px,100%);padding:20px 22px;background:#0b1020}
+.dg h3{margin:0;font-size:20px}
+.dg .q{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 12px;padding:13px 0;border-top:1px solid rgba(255,255,255,.06)}
+.dg .q .v{font-family:var(--mono);font-size:11.5px;color:var(--dim);overflow-wrap:anywhere}
+.dg .q .o{font-size:12px;color:var(--gold)}
+.dg .q .fo{font-size:11.5px;color:var(--faint)}.dg .q .fo a{color:inherit}
+.seg{display:inline-flex;border:1px solid var(--line2);border-radius:8px;overflow:hidden;align-self:start}
+.seg button{border:0;border-radius:0;padding:6px 10px;font-size:12px;background:none;color:var(--dim)}
+.seg button:hover{transform:none}
+.seg button.on[data-r=sim]{background:rgba(61,220,151,.18);color:var(--gain)}
+.seg button.on[data-r=nao]{background:rgba(255,107,91,.18);color:var(--loss)}
+.seg button.on[data-r=na]{background:rgba(255,255,255,.1);color:var(--ink)}
+.dg .pend{font-size:11px;color:var(--gold);font-family:var(--mono)}
+.sgk .nm{white-space:normal;overflow-wrap:anywhere}
+@media(max-width:640px){.hs{display:none}#tInv,#tInvG,#tParc,#tRat{min-width:0}#tInv td .s{max-width:15ch}.dg .q{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -424,7 +446,7 @@ input[type=date]{width:100%;background:rgba(255,255,255,.04);border:1px solid va
             <div class="f" style="margin-top:12px;max-width:260px"><label for="invAporte">Quanto vai aportar agora (R$)</label>
               <input type="number" step="0.01" inputmode="decimal" id="invAporte" placeholder="ex.: 1000"></div>
             <div id="invSug"></div>
-            <div class="tiny" style="margin-top:12px;line-height:1.5">Divide o valor entre os grupos para aproximar a carteira das metas que você definiu. Os ativos listados são os que você já tem no grupo, com a renda dos últimos 12 meses sobre o valor investido. Não é recomendação de investimento.</div>
+            <div class="tiny" id="invSugNota" style="margin-top:12px;line-height:1.5"></div>
           </div>
         </div>
 
@@ -432,7 +454,12 @@ input[type=date]{width:100%;background:rgba(255,255,255,.04);border:1px solid va
           <div class="st">Ativos<span class="hint" id="invFontes"></span></div>
           <div class="flt" id="invFlt"></div>
           <div class="tw"><table id="tInv"></table></div>
-          <div class="tiny" style="margin-top:10px;line-height:1.5">Variação = valor atual − valor investido. Retorno c/ proventos soma também o que o ativo já pagou. CDBs, Tesouro e fundos acumulam o rendimento no próprio valor.</div>
+          <div class="tiny" style="margin-top:10px;line-height:1.5">Variação = valor atual − valor investido. Retorno c/ proventos soma também o que o ativo já pagou. CDBs, Tesouro e fundos acumulam o rendimento no próprio valor.
+            <span id="invNotaTxt"></span></div>
+        </div>
+
+        <div id="dgOv" class="dg-ov hide" role="dialog" aria-modal="true" aria-labelledby="dgTit">
+          <div class="glass dg" id="dgBox"></div>
         </div>
 
         <div class="glass panel sec">
@@ -1654,10 +1681,10 @@ async function reload(){
   for(const m2 of S.months){const c=comRateio(calc(m2.fields||{},schemaOf(m2)),m2.id);Object.assign(m2,c)}
  }catch(e){toast(dberr(e),"no");return}
  try{
-  const[cd,cc,co]=await Promise.all([getDoc(cdref()),getDoc(ccref()),getDocs(collection(db,"users",S.uid,"carteiraOps"))]);
-  S.cart=cd.exists()?cd.data():null;S.cartCfg=cc.exists()?cc.data():{};
+  const[cd,cc,co,dg]=await Promise.all([getDoc(cdref()),getDoc(ccref()),getDocs(collection(db,"users",S.uid,"carteiraOps")),getDoc(dgref())]);
+  S.cart=cd.exists()?cd.data():null;S.cartCfg=cc.exists()?cc.data():{};S.diag=dg.exists()?dg.data():null;
   S.ops=co.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(b.criadoEm||"").localeCompare(a.criadoEm||""));
- }catch(e){S.cart=null;S.cartCfg={};S.ops=[];console.warn("carteira:",e)}
+ }catch(e){S.cart=null;S.cartCfg={};S.ops=[];S.diag=null;console.warn("carteira:",e)}
  buildForm();dash();hist();compSel();comp();invRender();ratRender();
 }
 const dberr=e=>String(e.code||e).includes("permission")
@@ -2040,10 +2067,12 @@ function hist(){
 
 /* ═══ INVESTIMENTOS ═══
    users/{uid}/carteira/dados   → {ativos[], proventos{AAAA-MM:{total,porGrupo}}, historico[], geradoEm, dataBase, fontes}
-   users/{uid}/carteira/config  → {metas{grupo:%}, rendaMeta}
+   users/{uid}/carteira/config  → {metas{grupo:%}, rendaMeta, diagEdits{codigo:{pergunta:resp}}}
+   users/{uid}/carteira/diagrama → {questionarios, fontes, ativos{codigo:{tipo, respostas{pergunta:{resp,valor,fonte,obs}}}}}
    users/{uid}/carteiraOps/{id} → compras e vendas registradas aqui                                  */
 const cdref=()=>doc(db,"users",S.uid,"carteira","dados");
 const ccref=()=>doc(db,"users",S.uid,"carteira","config");
+const dgref=()=>doc(db,"users",S.uid,"carteira","diagrama");
 const GRP=["Renda fixa","Fundos imobiliários","Ações Brasil","Exterior"];
 const GCOR={"Renda fixa":"#3d8bff","Fundos imobiliários":"#c084fc","Ações Brasil":"#3ddc97","Exterior":"#ffcf2d"};
 const pct=(v,d=1)=>(v*100).toLocaleString("pt-BR",{minimumFractionDigits:d,maximumFractionDigits:d})+"%";
@@ -2154,40 +2183,134 @@ let tMeta;$("invMeta").oninput=()=>{clearTimeout(tMeta);tMeta=setTimeout(async()
  const v=+$("invMeta").value||null;S.cartCfg={...S.cartCfg,rendaMeta:v};invRenda(renda12());
  if(S.kind!=="demo")try{await setDoc(ccref(),S.cartCfg)}catch(e){toast(dberr(e),"no")}},700)};
 
+/* ═══ DIAGRAMA: questionário sim/não por ativo (sim +1, não −1, n/a e "?" não contam) ═══ */
+const RESP={sim:"Sim",nao:"Não",na:"N/A"};
+function diagDe(cod){
+ const base=S.diag?.ativos?.[cod];if(!base)return null;
+ const Q=S.diag.questionarios?.[base.tipo];if(!Q)return null;
+ const ed=S.cartCfg?.diagEdits?.[cod]||{};
+ const itens=Q.perguntas.map(q=>{const r=base.respostas?.[q.id]||{resp:"na"};return{...q,...r,orig:r.resp,resp:ed[q.id]??r.resp,editado:ed[q.id]!==undefined&&ed[q.id]!==r.resp}});
+ return{tipo:base.tipo,Q,itens,nota:itens.reduce((s,x)=>s+(x.resp==="sim"?1:x.resp==="nao"?-1:0),0)};
+}
+const notaDe=cod=>diagDe(cod)?.nota??null;
+const ntBtn=a=>{const n=notaDe(a.codigo);if(n===null)return'<span class="tiny">—</span>';
+ return`<button class="nt ${n>0?"p":n<0?"n":"z"}" data-dg="${esc(a.codigo)}" title="Ver o questionário">${n>0?"+":""}${n}</button>`};
+
+/* itens de um grupo para dividir o aporte: o mesmo código em várias instituições vira um item; CDBs se agrupam pelo indexador */
+function itensGrupo(G){
+ const M=new Map();
+ for(const a of G.a){const cdb=a.classe==="CDB",k=cdb?"CDB "+(a.indexador||""):a.codigo,n=notaDe(a.codigo);
+  const x=M.get(k)||{k,valor:0,nota:null,preco:cdb||a.classe==="Tesouro Direto"?null:a.preco,ex:null};
+  x.valor+=a.valorAtual||0;
+  if(n!==null&&(x.nota===null||n>x.nota)){x.nota=n;x.ex=a}
+  M.set(k,x)}
+ return[...M.values()];
+}
+/* dentro do grupo: alvo de cada ativo proporcional à nota; o aporte cobre primeiro quem está mais abaixo do alvo */
+function divideGrupo(G,v){
+ const todos=itensGrupo(G);let ok=todos.filter(x=>x.nota>0);if(!ok.length)return{ok,fora:todos.length};
+ const fora=todos.length-ok.length,min=Math.max(5,v*.03);
+ // valores pequenos demais (abaixo de R$ 5 ou de 3% do grupo) saem e o que sobra é redividido entre os demais
+ for(let k=0;k<10;k++){
+  const sn=ok.reduce((s,x)=>s+x.nota,0),base=ok.reduce((s,x)=>s+x.valor,0)+v;
+  for(const x of ok)x.def=Math.max(0,x.nota/sn*base-x.valor);
+  const sd=ok.reduce((s,x)=>s+x.def,0);
+  for(const x of ok)x.v=sd?v*x.def/sd:v*x.nota/sn;
+  const fica=ok.filter(x=>x.v>=min);
+  if(fica.length===ok.length||!fica.length)break;
+  ok=fica;
+ }
+ return{ok:ok.filter(x=>x.v>=.5).sort((a,b)=>b.v-a.v),fora};
+}
+
 function invSug(){
- const m=S.cartCfg?.metas||{},A=+$("invAporte").value;
+ const m=S.cartCfg?.metas||{},A=+$("invAporte").value,tem=!!S.diag;
+ $("invSugNota").textContent=tem
+  ?"Divide o valor entre os grupos para aproximar a carteira das suas metas. Dentro de cada grupo, só entram ativos com nota acima de zero, e cada um recebe proporcionalmente à nota, começando por quem está mais abaixo da sua parte. Não é recomendação de investimento."
+  :"Divide o valor entre os grupos para aproximar a carteira das metas que você definiu. Importe uma carteira com as notas do Diagrama para ver a divisão por ativo. Não é recomendação de investimento.";
  if(Math.abs(somaM(m)-100)>.01){$("invSug").innerHTML='<div class="tiny" style="padding:14px 0">Salve as metas da divisão (somando 100%) para ver a sugestão.</div>';return}
  if(!(A>0)){$("invSug").innerHTML='<div class="tiny" style="padding:14px 0">Digite um valor para ver como dividir entre os grupos.</div>';return}
  const t=tot(),T2=t.valor+A,def=Object.fromEntries(GRP.map(g=>[g,Math.max(0,(+m[g]||0)/100*T2-t.g[g].valor)])),sd=Object.values(def).reduce((s,v)=>s+v,0);
  $("invSug").innerHTML=GRP.map(g=>({g,v:sd?A*def[g]/sd:0})).filter(x=>x.v>=.5).sort((a,b)=>b.v-a.v).map(({g,v})=>{
-  const M=new Map();for(const a of t.g[g].a){const k=a.classe==="CDB"?"CDB "+(a.indexador||""):a.codigo,x=M.get(k)||{k,custo:0,proventos12m:0};x.custo+=a.custo||0;x.proventos12m+=a.proventos12m||0;M.set(k,x)}
-  const tk=[...M.values()].sort((a,b)=>yoc(b)-yoc(a)||b.custo-a.custo).slice(0,8);
-  return`<div class="sg"><div><span class="dot" style="background:${GCOR[g]}"></span>${g}
-   <div class="tiny" style="margin-top:3px">de ${pct(t.g[g].valor/t.valor)} para ${pct((t.g[g].valor+v)/T2)} (meta ${m[g]}%)</div>
-   <div class="tk">${tk.map(x=>`<span class="pill">${esc(x.k)}${yoc(x)?" · "+pct(yoc(x)):""}</span>`).join("")}</div></div>
-   <div class="kv" style="font-size:17px">${brl(v)}</div></div>`}).join("");
+  let det="";
+  if(tem){const d=divideGrupo(t.g[g],v);
+   det=d.ok.length?`<div class="rk sgk" style="margin-top:8px">${d.ok.map(x=>{
+     const q=x.preco>0?Math.floor(x.v/x.preco):0,ex=x.ex?.classe==="CDB"?` · ex.: vence ${esc(x.ex.vencimento||"")}`:"";
+     return`<div><span class="nm">${esc(x.k)}<span class="tiny"> · nota ${x.nota}${ex}</span></span><span class="v">${brl(x.v)}</span><span class="pc">${q?"≈ "+q+(q===1?" cota":" cotas"):""}</span></div>`}).join("")}</div>
+    ${d.fora?`<div class="tiny" style="margin-top:4px">${d.fora} ativo(s) do grupo com nota zero, negativa ou sem avaliação ficaram de fora.</div>`:""}`
+   :'<div class="tiny" style="margin-top:6px">Nenhum ativo deste grupo tem nota acima de zero. Avalie um ativo ou escolha um novo para este grupo.</div>'}
+  else{const M=new Map();for(const a of t.g[g].a){const k=a.classe==="CDB"?"CDB "+(a.indexador||""):a.codigo,x=M.get(k)||{k,custo:0,proventos12m:0};x.custo+=a.custo||0;x.proventos12m+=a.proventos12m||0;M.set(k,x)}
+   det=`<div class="tk">${[...M.values()].sort((a,b)=>yoc(b)-yoc(a)||b.custo-a.custo).slice(0,8).map(x=>`<span class="pill">${esc(x.k)}${yoc(x)?" · "+pct(yoc(x)):""}</span>`).join("")}</div>`}
+  return`<div class="sg"><div style="min-width:0"><span class="dot" style="background:${GCOR[g]}"></span>${g}
+   <div class="tiny" style="margin-top:3px">de ${pct(t.g[g].valor/t.valor)} para ${pct((t.g[g].valor+v)/T2)} (meta ${m[g]}%)</div></div>
+   <div class="kv" style="font-size:17px">${brl(v)}</div><div style="grid-column:1/-1;min-width:0">${det}</div></div>`}).join("");
 }
 $("invAporte").oninput=invSug;
+
+/* painel do questionário de um ativo */
+function dgAbre(cod){
+ const d=diagDe(cod);if(!d)return;
+ const a=S.cart.ativos.find(x=>x.codigo===cod),ro=S.kind==="demo",F=S.diag.fontes||{};
+ const pend=d.itens.filter(x=>x.resp==="confirmar").length;
+ $("dgBox").innerHTML=`<div class="row" style="margin-top:0;justify-content:space-between;align-items:flex-start">
+   <div style="min-width:0"><div class="eyebrow">${esc(d.Q.titulo)}</div><h3 id="dgTit">${esc(cod.replace(/^CDB /,"CDB "))}</h3>
+    <div class="tiny">${esc(a?.nome||"")}</div></div>
+   <div style="text-align:right"><div class="kl">Nota</div><div class="kv ${d.nota>0?"gain":d.nota<0?"loss":""}" style="font-size:28px">${d.nota>0?"+":""}${d.nota}</div></div></div>
+  <div class="tiny" style="margin:10px 0 4px;line-height:1.5">${esc(d.Q.explica||"")} Sim soma 1, não tira 1; N/A e "?" não contam.${d.nota>0?" Este ativo entra na divisão do aporte.":" Com nota zero ou negativa, este ativo fica fora da divisão do aporte."}</div>
+  ${d.itens.map((x,i)=>{const f=F[x.fonte];return`<div class="q"><div style="min-width:0"><div><b>P${i+1} · ${esc(x.crit)}.</b> ${esc(x.p)}</div>
+    ${x.valor?`<div class="v">${esc(x.valor)}</div>`:""}${x.obs?`<div class="o">${esc(x.obs)}</div>`:""}
+    ${f?`<div class="fo">Fonte: ${f.url?`<a href="${esc(f.url)}" target="_blank" rel="noopener">${esc(f.nome)}</a>`:esc(f.nome)}</div>`:""}
+    ${x.editado?`<div class="fo">Você mudou esta resposta (a avaliação dizia "${esc(RESP[x.orig]||"?")}"). <a href="#" data-rv="${esc(x.id)}">Voltar à original</a></div>`:""}
+    ${x.resp==="confirmar"?'<div class="pend">? falta conferir; marque a resposta quando souber</div>':""}</div>
+   <div class="seg" role="group" aria-label="Resposta da pergunta ${i+1}">${["sim","nao","na"].map(r=>`<button data-q="${esc(x.id)}" data-r="${r}" class="${x.resp===r?"on":""}" ${ro?"disabled":""} aria-pressed="${x.resp===r}">${RESP[r]}</button>`).join("")}</div></div>`}).join("")}
+  <div class="row" style="justify-content:space-between;align-items:center"><span class="tiny">${pend?pend+' pergunta(s) com "?"':""}${S.diag.geradoEm?(pend?" · ":"")+"avaliação de "+iso(S.diag.geradoEm.slice(0,10)):""}</span>
+   <button class="primary mini" id="dgFecha">Fechar</button></div>`;
+ const novo=$("dgOv").classList.contains("hide");
+ $("dgOv").classList.remove("hide");
+ if(novo){$("dgOv").scrollTop=0;$("dgFecha").focus({preventScroll:true})}
+ $("dgFecha").onclick=dgFecha;
+ $("dgBox").querySelectorAll("[data-q]").forEach(b=>b.onclick=()=>dgMarca(cod,b.dataset.q,b.dataset.r));
+ $("dgBox").querySelectorAll("[data-rv]").forEach(l=>l.onclick=e=>{e.preventDefault();dgMarca(cod,l.dataset.rv,null)});
+}
+document.body.appendChild($("dgOv")); // fora das seções, que têm efeitos que prendem o position:fixed
+function dgFecha(){$("dgOv").classList.add("hide")}
+$("dgOv").onclick=e=>{if(e.target===$("dgOv"))dgFecha()};
+document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!$("dgOv").classList.contains("hide"))dgFecha()});
+async function dgMarca(cod,q,r){
+ if(S.kind==="demo")return;
+ const ed={...(S.cartCfg?.diagEdits||{})},a={...(ed[cod]||{})};
+ if(r===null||r===S.diag.ativos[cod]?.respostas?.[q]?.resp)delete a[q];else a[q]=r;
+ if(Object.keys(a).length)ed[cod]=a;else delete ed[cod];
+ S.cartCfg={...S.cartCfg,diagEdits:ed};
+ dgAbre(cod);invTabela();invSug();
+ try{await setDoc(ccref(),S.cartCfg)}catch(e){toast(dberr(e),"no")}
+}
 
 function invTabela(){
  const gs=["Todos",...GRP.filter(g=>S.cart.ativos.some(a=>a.grupo===g))];
  $("invFlt").innerHTML=gs.map(g=>`<button class="${IV.filtro===g?"on":""}" data-f="${g}">${g}</button>`).join("");
  $("invFlt").querySelectorAll("[data-f]").forEach(b=>b.onclick=()=>{IV.filtro=b.dataset.f;invTabela()});
  const T=S.cart.ativos.reduce((s,a)=>s+(a.valorAtual||0),0)||1;
- const F={varR:a=>a.valorAtual-a.custo,varP:a=>a.custo?(a.valorAtual-a.custo)/a.custo:0,ret:a=>a.custo?(a.valorAtual+(a.proventosTotal||0)-a.custo)/a.custo:0,yoc,peso:a=>a.valorAtual};
+ const F={varR:a=>a.valorAtual-a.custo,varP:a=>a.custo?(a.valorAtual-a.custo)/a.custo:0,ret:a=>a.custo?(a.valorAtual+(a.proventosTotal||0)-a.custo)/a.custo:0,yoc,peso:a=>a.valorAtual,
+  nota:a=>notaDe(a.codigo)??-99};
+ const temD=!!S.diag;
  const{k,d}=IV.ord,val=a=>F[k]?F[k](a):a[k];
  const L=S.cart.ativos.filter(a=>IV.filtro==="Todos"||a.grupo===IV.filtro).sort((a,b)=>{const x=val(a),y=val(b);return(typeof x==="string"?x.localeCompare(y):(x||0)-(y||0))*d});
  const h=(key,t,c="")=>`<th class="${c}" data-o="${key}">${t}${k===key?(d>0?" ↑":" ↓"):""}</th>`;
- $("tInv").innerHTML=`<thead><tr>${h("codigo","Ativo")}${h("instituicao","Instituição","hs")}${h("peso","% carteira","n")}${h("custo","Investido","n hs")}${h("valorAtual","Valor atual","n hs")}${h("varR","Variação","n hs")}${h("varP","Var. %","n")}${h("ret","c/ proventos","n hs")}${h("proventos12m","Proventos 12m","n hs")}${h("yoc","Renda s/ inv.","n hs")}</tr></thead><tbody>${
+ $("tInv").innerHTML=`<thead><tr>${h("codigo","Ativo")}${temD?h("nota","Nota","n"):""}${h("instituicao","Instituição","hs")}${h("peso","% carteira","n")}${h("custo","Investido","n hs")}${h("valorAtual","Valor atual","n hs")}${h("varR","Variação","n hs")}${h("varP","Var. %","n")}${h("ret","c/ proventos","n hs")}${h("proventos12m","Proventos 12m","n hs")}${h("yoc","Renda s/ inv.","n hs")}</tr></thead><tbody>${
   L.map(a=>{const sub=a.classe==="CDB"?`${a.indexador||""} · vence ${a.vencimento||""}`:a.classe==="Tesouro Direto"?`vence ${a.vencimento||""}`:a.nome;
    return`<tr><td><span style="font-weight:500">${esc(a.classe==="CDB"?"CDB "+a.instituicao:a.codigo)}</span>${a.bloqueado?' <span class="chipx">em garantia</span>':""}<span class="s" title="${esc(a.nome)}">${esc(sub)}</span></td>
-    <td class="hs tiny">${esc(a.instituicao)}</td><td class="n">${pct((a.valorAtual||0)/T,2)}</td>
+    ${temD?`<td class="n">${ntBtn(a)}</td>`:""}<td class="hs tiny">${esc(a.instituicao)}</td><td class="n">${pct((a.valorAtual||0)/T,2)}</td>
     <td class="n hs tiny">${brl(a.custo)}</td><td class="n hs">${brl(a.valorAtual)}</td>
     <td class="n hs ${gc(F.varR(a))}">${a.custo?sR(F.varR(a)):"—"}</td><td class="n ${gc(F.varR(a))}">${a.custo?sP(F.varP(a)):"—"}</td>
     <td class="n hs ${gc(F.ret(a))}">${a.custo?sP(F.ret(a)):"—"}</td>
     <td class="n hs tiny">${a.proventos12m?brl(a.proventos12m):"—"}</td><td class="n hs tiny">${yoc(a)?pct(yoc(a)):"—"}</td></tr>`}).join("")}</tbody>`;
  $("tInv").querySelectorAll("[data-o]").forEach(th=>th.onclick=()=>{const o=th.dataset.o;
   IV.ord={k:o,d:IV.ord.k===o?-IV.ord.d:(o==="codigo"||o==="instituicao"?1:-1)};invTabela()});
+ $("tInv").querySelectorAll("[data-dg]").forEach(b=>b.onclick=()=>dgAbre(b.dataset.dg));
+ if(temD){const ns=S.cart.ativos.map(a=>notaDe(a.codigo)),ap=ns.filter(n=>n>0).length,fo=ns.filter(n=>n!==null&&n<=0).length,se=ns.filter(n=>n===null).length;
+  $("invNotaTxt").textContent=`Nota do Diagrama: toque no número para ver e mudar as respostas. ${ap} ativo(s) com nota acima de zero entram nos aportes, ${fo} ficam de fora${se?` e ${se} ${se===1?"não tem":"não têm"} avaliação`:""}.`}
+ else $("invNotaTxt").textContent="";
  $("opCods").innerHTML=[...new Set(S.cart.ativos.filter(a=>a.classe!=="CDB").map(a=>a.codigo))].sort().map(c=>`<option value="${esc(c)}">`).join("");
  $("opInsts").innerHTML=[...new Set(S.cart.ativos.map(a=>a.instituicao))].sort().map(c=>`<option value="${esc(c)}">`).join("");
  if(!$("opGrupo").options.length)$("opGrupo").innerHTML=GRP.map(g=>`<option>${g}</option>`).join("");
@@ -2254,9 +2377,11 @@ $("invFile").onchange=async e=>{
  const pend=S.ops.filter(o=>(o.criadoEm||"")>(j.geradoEm||"")).reverse();
  const ativos=j.ativos.map(a=>({...a}));let ok=0;for(const o of pend)if(aplicaOp(ativos,o))ok++;
  const T=ativos.reduce((s,a)=>s+(a.valorAtual||0),0);
- if(!confirm(`Importar a carteira de ${iso(j.dataBase)}?\n\n${ativos.length} ativos · ${brl(T)}${pend.length?`\n${ok} operação(ões) registrada(s) aqui depois disso serão mantidas.`:""}\n\nIsso substitui a carteira atual do app. Suas metas e o orçamento não mudam.`))return;
+ const{diagrama,...dados}=j,nd=diagrama?Object.keys(diagrama.ativos||{}).length:0;
+ if(!confirm(`Importar a carteira de ${iso(j.dataBase)}?\n\n${ativos.length} ativos · ${brl(T)}${nd?`\nNotas do Diagrama para ${nd} ativos (as respostas que você mudou no app continuam valendo).`:""}${pend.length?`\n${ok} operação(ões) registrada(s) aqui depois disso serão mantidas.`:""}\n\nIsso substitui a carteira atual do app. Suas metas e o orçamento não mudam.`))return;
  busy($("bInvImp"),1);
- try{await setDoc(cdref(),{...j,ativos,importadoEm:new Date().toISOString()});await reload();toast(`Carteira importada: ${ativos.length} ativos, ${brl(T)}.`,"ok")}
+ try{const b=writeBatch(db);b.set(cdref(),{...dados,ativos,importadoEm:new Date().toISOString()});if(diagrama)b.set(dgref(),diagrama);await b.commit();
+  await reload();toast(`Carteira importada: ${ativos.length} ativos, ${brl(T)}${nd?`, com notas para ${nd}`:""}.`,"ok")}
  catch(e){toast(dberr(e),"no")}finally{busy($("bInvImp"),0,"Importar carteira")}
 };
 

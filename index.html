@@ -340,6 +340,10 @@ input[type=date]{width:100%;background:rgba(255,255,255,.04);border:1px solid va
           <div class="f"><label for="pValor">Valor total (R$)</label><input type="number" step="0.01" inputmode="decimal" id="pValor" placeholder="ex.: 600,00"></div>
           <div class="f"><label for="pParc">Parcelas</label><input type="number" step="1" min="1" max="48" inputmode="numeric" id="pParc" value="1"></div>
           <div class="f"><label for="pData">Data da compra</label><input type="date" id="pData"></div>
+          <div class="f"><label for="pTaxa">Taxa que a pessoa paga (%)</label><input type="number" step="0.1" min="0" max="100" inputmode="decimal" id="pTaxa" value="5"></div>
+          <div class="f"><label for="pTaxaModo">Como paga a taxa</label><select id="pTaxaModo">
+            <option value="parcelas">Dividida em cada parcela</option>
+            <option value="final">De uma vez, no mês depois da última parcela</option></select></div>
         </div>
         <div class="tiny" id="pPrev" style="line-height:1.5"></div>
         <div class="row"><button class="primary mini" id="bParc">Adicionar compra</button><button class="ghost mini hide" id="bParcCancel">Cancelar edição</button></div>
@@ -2394,15 +2398,28 @@ function preencheGab(){
 }
 
 /* ═══ COMPRAS PARCELADAS DE TERCEIRO NO C6 ═══
-   users/{uid}/parcelados/{id} → {desc, valor, parcelas, data "AAAA-MM-DD"}
-   O C6 fecha no dia 4: compra até o dia 4 cai na fatura do mesmo mês; do dia 5 em diante, na do mês seguinte. */
-const C6_FECHA=4;
+   users/{uid}/parcelados/{id} → {desc, valor, parcelas, data "AAAA-MM-DD", taxa %, taxaModo "parcelas"|"final"}
+   O C6 fecha no dia 4: compra até o dia 4 cai na fatura do mesmo mês; do dia 5 em diante, na do mês seguinte.
+   A pessoa devolve a compra mais uma taxa (5% por padrão): dividida nas parcelas ou de uma vez no mês seguinte à última.
+   Tudo o que ela devolve entra no campo de recebido e abate do total do mês. */
+const C6_FECHA=4,TAXA_PADRAO=5;
 const pcref=id=>doc(db,"users",S.uid,"parcelados",id);
 const mesFatura=d=>{const ym=d.slice(0,7);return +d.slice(8,10)<=C6_FECHA?ym:addM(ym,1)};
 const parcVal=(p,k)=>{const base=r2(p.valor/p.parcelas);return k<p.parcelas?base:r2(p.valor-base*(p.parcelas-1))};
+const taxaPct=p=>p.taxa??TAXA_PADRAO;
+const taxaModo=p=>p.taxaModo==="final"?"final":"parcelas";
+const taxaTot=p=>r2(p.valor*taxaPct(p)/100);
+const taxaFinal=p=>taxaModo(p)==="final"&&taxaTot(p)>0;
+const nMeses=p=>p.parcelas+(taxaFinal(p)?1:0);
+// taxa de cada mês: dividida nas parcelas (a última acerta os centavos) ou inteira no mês depois da última
+const taxaVal=(p,k)=>{const t=taxaTot(p);if(!t)return 0;
+ if(taxaFinal(p))return k===p.parcelas+1?t:0;
+ if(k>p.parcelas)return 0;const base=r2(t/p.parcelas);return k<p.parcelas?base:r2(t-base*(p.parcelas-1))};
+const recVal=(p,k)=>r2((k<=p.parcelas?parcVal(p,k):0)+taxaVal(p,k));
+const taxaTxt=p=>taxaTot(p)?`+ ${String(taxaPct(p)).replace(".",",")}% de taxa (${brl(taxaTot(p))}) ${taxaFinal(p)?"de uma vez no fim":"nas parcelas"}`:"sem taxa";
 function parcDoMes(id){
  const out=[];
- for(const p of S.parcs||[]){const k=mDif(mesFatura(p.data),id)+1;if(k>=1&&k<=p.parcelas)out.push({p,k,v:parcVal(p,k)})}
+ for(const p of S.parcs||[]){const k=mDif(mesFatura(p.data),id)+1;if(k>=1&&k<=nMeses(p))out.push({p,k,v:recVal(p,k),tx:taxaVal(p,k)})}
  return out;
 }
 const previstoStev=id=>r2(parcDoMes(id).reduce((s,x)=>s+x.v,0));
@@ -2417,41 +2434,50 @@ function parcRender(){
  $("parcCampo").textContent=campo.l;$("bParc").disabled=ro;
  if(!$("pData").value)$("pData").value=new Date(Date.now()-new Date().getTimezoneOffset()*6e4).toISOString().slice(0,10);
  pPrev();
- const doMes=parcDoMes(id),tot=r2(doMes.reduce((s,x)=>s+x.v,0)),salvo=S.months.find(x=>x.id===id)?.fields?.stev;
- $("parcMes").innerHTML=!id?"":doMes.length
-  ?`Previsto para <b style="color:var(--ink)">${ml(id)}</b>: <b style="color:var(--ink)">${brl(tot)}</b> (${doMes.length} ${doMes.length===1?"parcela":"parcelas"}).`+
+ const doMes=parcDoMes(id),tot=r2(doMes.reduce((s,x)=>s+x.v,0)),tx=r2(doMes.reduce((s,x)=>s+x.tx,0)),salvo=S.months.find(x=>x.id===id)?.fields?.stev;
+ // próximos meses com valor a receber (a partir do mês seguinte ao escolhido)
+ const prox=[];if(id)for(let i=1;i<=24&&prox.length<6;i++){const m=addM(id,i),v=r2(parcDoMes(m).reduce((s,x)=>s+x.v,0));if(v)prox.push(`${ml(m)} ${brl(v)}`)}
+ $("parcMes").innerHTML=(!id?"":doMes.length
+  ?`Previsto para <b style="color:var(--ink)">${ml(id)}</b>: <b style="color:var(--ink)">${brl(tot)}</b> (${doMes.length} ${doMes.length===1?"lançamento":"lançamentos"}${tx?`, sendo ${brl(tx)} de taxa`:""}). Abate do total do mês.`+
    (salvo!==undefined&&r2(+salvo)!==tot?` Lançado no mês: ${brl(+salvo)} (${+salvo>tot?"+":"−"}${brl(Math.abs(+salvo-tot))}).`:"")
-  :`Nenhuma parcela vence em ${ml(id)}.`;
+  :`Nada a receber em ${ml(id)}.`)+(prox.length?`<div class="tiny" style="margin-top:6px">Próximos: ${prox.join(" · ")}</div>`:"");
  if(!P.length){$("tParc").innerHTML='<tbody><tr><td class="empty" style="padding:20px">Nenhuma compra cadastrada.</td></tr></tbody>';return}
  $("tParc").innerHTML=`<thead><tr><th>Compra</th><th class="n">Total</th><th class="n hs">Parcelas</th><th class="hs">Faturas</th><th>Em ${id?ml(id):"—"}</th><th></th></tr></thead><tbody>${
-  P.map(p=>{const ini=mesFatura(p.data),fim=addM(ini,p.parcelas-1),k=id?mDif(ini,id)+1:0;
-   const em=k>=1&&k<=p.parcelas?`<span class="pill dn">${k}/${p.parcelas} · ${brl(parcVal(p,k))}</span>`
-    :k>p.parcelas?'<span class="tiny">quitada</span>':`<span class="tiny">começa em ${ml(ini)}</span>`;
+  P.map(p=>{const ini=mesFatura(p.data),fim=addM(ini,nMeses(p)-1),k=id?mDif(ini,id)+1:0;
+   const em=k>=1&&k<=p.parcelas?`<span class="pill dn">${k}/${p.parcelas} · ${brl(recVal(p,k))}</span>`
+    :k===p.parcelas+1&&taxaFinal(p)?`<span class="pill dn">taxa · ${brl(taxaTot(p))}</span>`
+    :k>nMeses(p)?'<span class="tiny">quitada</span>':`<span class="tiny">começa em ${ml(ini)}</span>`;
    return`<tr><td><span style="font-weight:500">${esc(p.desc)}</span><div class="tiny" style="white-space:nowrap">${p.data.split("-").reverse().join("/")} · ${p.parcelas}×</div></td>
-    <td class="n">${brl(p.valor)}</td><td class="n tiny hs">${p.parcelas}× ${brl(parcVal(p,1))}</td>
+    <td class="n">${brl(r2(p.valor+taxaTot(p)))}<div class="tiny">${brl(p.valor)} ${esc(taxaTxt(p))}</div></td><td class="n tiny hs">${p.parcelas}× ${brl(recVal(p,1))}</td>
     <td class="hs tiny" style="white-space:nowrap">${ml(ini)} → ${ml(fim)}</td><td>${em}</td>
     <td style="white-space:nowrap">${ro?"":`<button class="mini ghost" data-pe="${p.id}">Editar</button> <button class="del" data-pd="${p.id}">Excluir</button>`}</td></tr>`}).join("")}</tbody>`;
  $("tParc").querySelectorAll("[data-pe]").forEach(b=>b.onclick=()=>{const p=P.find(x=>x.id===b.dataset.pe);S.parcEdit=p.id;
   $("pDesc").value=p.desc;$("pValor").value=p.valor;$("pParc").value=p.parcelas;$("pData").value=p.data;
+  $("pTaxa").value=taxaPct(p);$("pTaxaModo").value=taxaModo(p);
   $("bParc").textContent="Salvar alteração";$("bParcCancel").classList.remove("hide");pPrev()});
  $("tParc").querySelectorAll("[data-pd]").forEach(b=>b.onclick=async()=>{const p=P.find(x=>x.id===b.dataset.pd);
   if(!confirm(`Excluir "${p.desc}" (${brl(p.valor)} em ${p.parcelas}×)?`))return;
   try{await deleteDoc(pcref(p.id));S.parcs=P.filter(x=>x!==p);parcAtualiza();toast("Compra excluída.","ok")}catch(e){toast(dberr(e),"no")}});
 }
+const pTaxaLida=()=>{const t=$("pTaxa").value;return t===""?0:Math.max(0,+t||0)};
 function pPrev(){
  const v=+$("pValor").value,n=Math.round(+$("pParc").value),d=$("pData").value;
  if(!(v>0&&n>=1&&d)){$("pPrev").textContent="Compras até o dia 4 entram na fatura do mesmo mês; do dia 5 em diante, na fatura seguinte.";return}
- const ini=mesFatura(d),p={valor:v,parcelas:n};
- $("pPrev").innerHTML=`${n}× de ${brl(parcVal(p,1))}${n>1&&parcVal(p,n)!==parcVal(p,1)?` (última ${brl(parcVal(p,n))})`:""}, nas faturas de ${ml(ini)}${n>1?` a ${ml(addM(ini,n-1))}`:""}.`;
+ const ini=mesFatura(d),p={valor:v,parcelas:n,taxa:pTaxaLida(),taxaModo:$("pTaxaModo").value};
+ const fimTx=taxaFinal(p)?` Taxa de ${brl(taxaTot(p))} em ${ml(addM(ini,n))}.`:"";
+ $("pPrev").innerHTML=`A pessoa te paga ${n}× de ${brl(recVal(p,1))}${n>1&&recVal(p,n)!==recVal(p,1)?` (última ${brl(recVal(p,n))})`:""}, nas faturas de ${ml(ini)}${n>1?` a ${ml(addM(ini,n-1))}`:""}.${fimTx} Total: ${brl(r2(v+taxaTot(p)))}.`;
 }
-["pValor","pParc","pData"].forEach(i=>$(i).oninput=pPrev);
+["pValor","pParc","pData","pTaxa","pTaxaModo"].forEach(i=>$(i).oninput=pPrev);
+$("pTaxaModo").onchange=pPrev;
 // atualiza a lista e o campo do mês sem recarregar o formulário (não perde o que você já digitou)
 function parcAtualiza(){parcRender();preencheStev($("mp").value);prev()}
-function parcLimpa(){S.parcEdit=null;["pDesc","pValor"].forEach(i=>$(i).value="");$("pParc").value=1;
+function parcLimpa(){S.parcEdit=null;["pDesc","pValor"].forEach(i=>$(i).value="");$("pParc").value=1;$("pTaxa").value=TAXA_PADRAO;$("pTaxaModo").value="parcelas";
  $("bParc").textContent="Adicionar compra";$("bParcCancel").classList.add("hide");pPrev()}
 $("bParcCancel").onclick=parcLimpa;
 $("bParc").onclick=async()=>{
- const p={desc:$("pDesc").value.trim(),valor:r2(+$("pValor").value),parcelas:Math.round(+$("pParc").value),data:$("pData").value};
+ const p={desc:$("pDesc").value.trim(),valor:r2(+$("pValor").value),parcelas:Math.round(+$("pParc").value),data:$("pData").value,
+  taxa:pTaxaLida(),taxaModo:$("pTaxaModo").value};
+ if(p.taxa>100)return toast("A taxa precisa ficar entre 0% e 100%.","no");
  if(!p.desc)return toast("Diga o que foi comprado.","no");
  if(!(p.valor>0))return toast("Informe o valor total da compra.","no");
  if(!(p.parcelas>=1&&p.parcelas<=48))return toast("As parcelas precisam ficar entre 1 e 48.","no");
@@ -2462,7 +2488,7 @@ $("bParc").onclick=async()=>{
   await setDoc(ref,{...p,atualizadoEm:new Date().toISOString()});
   S.parcs=[{id:ref.id,...p},...(S.parcs||[]).filter(x=>x.id!==ref.id)].sort((a,b)=>b.data.localeCompare(a.data));
   parcLimpa();parcAtualiza();
-  toast(`${p.desc}: ${p.parcelas}× de ${brl(parcVal(p,1))} a partir da fatura de ${ml(mesFatura(p.data))}.`,"ok");
+  toast(`${p.desc}: ${p.parcelas}× de ${brl(recVal(p,1))} a partir da fatura de ${ml(mesFatura(p.data))}${taxaFinal(p)?`, mais ${brl(taxaTot(p))} de taxa em ${ml(addM(mesFatura(p.data),p.parcelas))}`:""}.`,"ok");
  }catch(e){toast(dberr(e),"no")}finally{busy($("bParc"),0,S.parcEdit?"Salvar alteração":"Adicionar compra");$("bParc").disabled=S.kind==="demo"}
 };
 

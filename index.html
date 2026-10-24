@@ -369,7 +369,7 @@ input[type=date]{width:100%;background:rgba(255,255,255,.04);border:1px solid va
     </section>
 
     <section id="v-rat" class="view hide">
-      <div class="head"><div><div class="eyebrow">pagos de uma vez, divididos por mês</div><h1>Pagamentos antecipados</h1></div></div>
+      <div class="head"><div><div class="eyebrow">pagos de uma vez, valem por vários meses</div><h1>Pagamentos antecipados</h1></div></div>
       <div class="kpis" id="kRat"></div>
 
       <div class="glass panel sec">
@@ -395,7 +395,7 @@ input[type=date]{width:100%;background:rgba(255,255,255,.04);border:1px solid va
         <div class="st">Seus pagamentos<span class="hint">situação em relação a este mês</span></div>
         <div class="tw"><table id="tRat"></table></div>
       </div>
-      <div class="tiny" style="line-height:1.6;max-width:760px">Como entra no orçamento: no mês do pagamento, o valor inteiro conta no <b>Total líquido</b> (pelo cartão ele já vem na fatura; por Pix, boleto ou débito o app soma sozinho). Nos meses cobertos, a parcela (valor ÷ meses) aparece em <b>Custo com rateio</b>, que mostra quanto cada mês custa de verdade, sem o pico do mês em que você pagou.</div>
+      <div class="tiny" style="line-height:1.6;max-width:760px">Como entra no orçamento: o valor inteiro conta só no <b>Total líquido</b> do mês do pagamento (pelo cartão ele já vem na fatura; por Pix, boleto ou débito o app soma sozinho). Nos outros meses cobertos ele aparece só como informação (2/6, 3/6…) e não soma nada.</div>
     </section>
 
     <section id="v-inv" class="view hide">
@@ -1787,8 +1787,7 @@ function prev(){
  $("prev").innerHTML=`<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:18px;margin-top:6px">
   ${pv("Gastos brutos",brl(c.bruto))}${pv("Abatido",brl(c.receb))}
   ${c.antecip?pv("Antecipados por Pix/boleto",brl(c.antecip)):""}
-  ${pv("TOTAL LÍQUIDO",brl(c.liquido),1)}${pv("Com investimentos",brl(c.comInv),1)}
-  ${(S.rats||[]).length?pv("Custo com rateio",brl(c.rateado),1):""}</div>`;
+  ${pv("TOTAL LÍQUIDO",brl(c.liquido),1)}${pv("Com investimentos",brl(c.comInv),1)}</div>${ratHtml($("mp").value)}`;
 }
 const pv=(l,v,b)=>`<div><div class="kl">${l}</div><div class="kv" style="font-size:${b?22:18}px">${v}</div></div>`;
 
@@ -1963,13 +1962,13 @@ function dash(){
     return" · "+list+" fora"})()}`,"")+
   kpi("Contra a média",`${vsAvg>=0?"+":""}${brl(vsAvg)}`,
    vsAvg>0?"acima do seu padrão":"abaixo do seu padrão",vsAvg>0?"up":"dn",1)+
-  ((S.rats||[]).length?kpi("Custo com rateio — "+ml(last.id),brl(last.rateado),
-   last.parcela?`inclui ${brl(last.parcela)} de pagamentos antecipados`:"nenhum pagamento antecipado cobre este mês",""):"");
+  ((S.rats||[]).length?(()=>{const L=ratDoMes(last.id),pg=L.filter(x=>x.pago).reduce((s,x)=>s+x.r.valor,0);
+   return kpi("Pagamentos antecipados — "+ml(last.id),pg?brl(pg):"nada pago",
+    L.length?L.map(x=>`${esc(x.r.nome)} ${x.k>=1?x.k+"/"+x.r.meses:"pago"}${x.pago?"":" (não soma)"}`).join(" · "):"nenhum cobre este mês","")})():"");
 
  chart("cTot","line",u.map(m=>ml(m.id)),[
   {l:"Líquido",d:u.map(m=>m.liquido),c:"#3d8bff",area:1,fill:"rgba(61,139,255,.10)"},
-  {l:"Com investimentos",d:u.map(m=>m.comInv),c:"#ffcf2d"},
-  ...((S.rats||[]).length?[{l:"Com rateio",d:u.map(m=>m.rateado),c:"#c084fc"}]:[])]);
+  {l:"Com investimentos",d:u.map(m=>m.comInv),c:"#ffcf2d"}]);
 
  // rosca — azul marinho para o C6, azul capri para as fixas
  const fixas=groupSum(last,"recorrente")+groupSum(last,"naoRecorrente");
@@ -2056,12 +2055,12 @@ function comp(){
 function hist(){
  if(!S.months.length){$("tHist").innerHTML='<tbody><tr><td class="empty">Nenhum mês salvo ainda.</td></tr></tbody>';return}
  $("tHist").innerHTML=`<thead><tr><th>Mês</th><th class="n">Bruto</th><th class="n">Abatido</th>
-  <th class="n">Líquido</th><th class="n">Com invest.</th>${(S.rats||[]).length?'<th class="n">Com rateio</th>':""}<th>Fatura</th><th></th></tr></thead><tbody>${
+  <th class="n">Líquido</th><th class="n">Com invest.</th>${(S.rats||[]).length?'<th class="hs">Antecipados</th>':""}<th>Fatura</th><th></th></tr></thead><tbody>${
   [...S.months].reverse().map(m=>`<tr>
    <td>${ml(m.id)}${SKIP.includes(m.id)?' <span class="tiny">fora da média</span>':""}</td>
    <td class="n tiny">${brl(m.bruto)}</td><td class="n tiny">${brl(m.receb)}</td>
    <td class="n" style="font-weight:600">${brl(m.liquido)}</td><td class="n tiny">${brl(m.comInv)}</td>
-   ${(S.rats||[]).length?`<td class="n tiny">${brl(m.rateado)}</td>`:""}
+   ${(S.rats||[]).length?`<td class="hs tiny">${ratDoMes(m.id).map(x=>`${esc(x.r.nome)} ${x.pago?`pago ${brl(x.r.valor)}${x.k>=1?` (${x.k}/${x.r.meses})`:""}`:`${x.k}/${x.r.meses}`}`).join("<br>")||"—"}</td>`:""}
    <td>${S.boletos.some(b=>b.id===m.id)?'<span class="pill">anexada</span>':'<span class="tiny">—</span>'}</td>
    <td><button class="mini ghost" data-open="${m.id}">Abrir</button></td></tr>`).join("")}</tbody>`;
  $("tHist").querySelectorAll("[data-open]").forEach(b=>b.onclick=async e=>{
@@ -2495,22 +2494,27 @@ $("bParc").onclick=async()=>{
 /* ═══ PAGAMENTOS ANTECIPADOS ═══
    users/{uid}/rateios/{id} → {nome, valor, mesPago "AAAA-MM", meses, inicio "AAAA-MM", pagoCom "cartao"|"avulso"}
    · mês do pagamento: o valor inteiro conta no líquido (no cartão já vem na fatura; avulso o app soma)
-   · meses cobertos: a parcela valor/meses entra em "Custo com rateio"                                */
+   · meses cobertos: só aparecem como informação (2/6, 3/6…) e não somam nada                         */
 const rref=id=>doc(db,"users",S.uid,"rateios",id);
 const mDif=(a,b)=>{const[ay,am]=a.split("-").map(Number),[by,bm]=b.split("-").map(Number);return(by-ay)*12+(bm-am)};
 const ratFim=r=>addM(r.inicio,r.meses-1);
-function rat(id){
- let avulso=0,pagos=0,parcela=0;
- for(const r of S.rats||[]){
-  if(r.mesPago===id){pagos+=r.valor;if(r.pagoCom==="avulso")avulso+=r.valor}
-  const i=mDif(r.inicio,id);if(i>=0&&i<r.meses)parcela+=r.valor/r.meses;
- }
- return{avulso,pagos,parcela};
+// pagamentos que aparecem num mês: os pagos nele (somam) e os que o cobrem (só informação); k = mês de cobertura
+function ratDoMes(id){
+ if(!id)return[];
+ return(S.rats||[]).map(r=>({r,k:mDif(r.inicio,id)+1,pago:r.mesPago===id}))
+  .filter(x=>x.pago||(x.k>=1&&x.k<=x.r.meses));
 }
 function comRateio(c,id){
- const a=id?rat(id):{avulso:0,pagos:0,parcela:0};
- const liquido=r2(c.liquido+a.avulso);
- return{...c,antecip:r2(a.avulso),liquido,comInv:r2(c.comInv+a.avulso),parcela:r2(a.parcela),rateado:r2(liquido-a.pagos+a.parcela)};
+ const avulso=(S.rats||[]).filter(r=>id&&r.mesPago===id&&r.pagoCom==="avulso").reduce((s,r)=>s+r.valor,0);
+ return{...c,antecip:r2(avulso),liquido:r2(c.liquido+avulso),comInv:r2(c.comInv+avulso)};
+}
+function ratHtml(id){
+ const L=ratDoMes(id);if(!L.length)return"";
+ return`<div style="margin-top:16px"><div class="kl">Pagamentos antecipados</div><div class="rk">${L.map(({r,k,pago})=>{
+  const cob=k>=1?`${k}/${r.meses} de cobertura`:`cobre a partir de ${ml(r.inicio)}`,ult=k===r.meses?` · último mês, renovar em ${ml(addM(ratFim(r),1))}`:"";
+  return`<div><span class="nm">${esc(r.nome)} <span class="tiny">· ${cob}${ult}</span></span>
+   <span class="v">${pago?brl(r.valor):"—"}</span><span class="pc">${pago?(r.pagoCom==="avulso"?"soma aqui":"na fatura"):"não soma"}</span></div>`}).join("")}</div>
+  <div class="tiny" style="margin-top:4px">Conta inteiro só no mês em que foi pago; nos outros meses aparece só para mostrar a cobertura.</div></div>`;
 }
 function ratStatus(r,hoje){
  const i=mDif(r.inicio,hoje),fim=ratFim(r);
@@ -2526,19 +2530,18 @@ function ratRender(){
  if(!$("ratMes").value){$("ratMes").value=hoje;$("ratIni").value=hoje}
  ratPrev();
  const ativos=R.filter(r=>{const i=mDif(r.inicio,hoje);return i>=0&&i<r.meses});
- const porMes=ativos.reduce((s,r)=>s+r.valor/r.meses,0);
  // próxima renovação: o primeiro mês depois do fim de cobertura, entre os que ainda não foram renovados
  const prox=R.filter(r=>!R.some(o=>o!==r&&o.nome.trim().toLowerCase()===r.nome.trim().toLowerCase()&&o.inicio>r.inicio))
   .map(r=>({r,em:addM(ratFim(r),1)})).sort((a,b)=>a.em.localeCompare(b.em))[0];
  $("kRat").innerHTML=
-  kpi("Custo rateado — "+ml(hoje),brl(porMes)+"/mês",`${ativos.length} ${ativos.length===1?"pagamento cobre":"pagamentos cobrem"} este mês`,"",1)+
-  kpi("Próxima renovação",prox?ml(prox.em):"—",prox?`${esc(prox.r.nome)} · ${brl(prox.r.valor)}`:"nenhum pagamento cadastrado",prox&&prox.em<=addM(hoje,1)?"up":"")+
-  kpi("Reserva sugerida",brl(porMes)+"/mês","guardando isso, a renovação não pesa no mês","",1);
+  kpi("Cobrindo "+ml(hoje),`${ativos.length} ${ativos.length===1?"pagamento":"pagamentos"}`,
+   ativos.length?ativos.map(r=>`${esc(r.nome)} ${mDif(r.inicio,hoje)+1}/${r.meses}`).join(" · "):"nenhum cobre este mês","",1)+
+  kpi("Próxima renovação",prox?ml(prox.em):"—",prox?`${esc(prox.r.nome)} · ${brl(prox.r.valor)}`:"nenhum pagamento cadastrado",prox&&prox.em<=addM(hoje,1)?"up":"");
  if(!R.length){$("tRat").innerHTML='<tbody><tr><td class="empty">Nenhum pagamento cadastrado. Use o formulário acima, por exemplo para o app rastreador do carro.</td></tr></tbody>';return}
- $("tRat").innerHTML=`<thead><tr><th>Pagamento</th><th class="n">Valor</th><th class="n">Por mês</th><th class="hs">Pago em</th><th>Cobertura</th><th>Situação</th><th></th></tr></thead><tbody>${
-  [...R].reverse().map(r=>{const st=ratStatus(r,hoje);
+ $("tRat").innerHTML=`<thead><tr><th>Pagamento</th><th class="n">Valor</th><th class="n">Cobertura agora</th><th class="hs">Pago em</th><th>Cobertura</th><th>Situação</th><th></th></tr></thead><tbody>${
+  [...R].reverse().map(r=>{const st=ratStatus(r,hoje),k=mDif(r.inicio,hoje)+1;
    return`<tr><td><span style="font-weight:500">${esc(r.nome)}</span><div class="tiny">${r.pagoCom==="avulso"?"Pix, boleto ou débito":"no cartão"}</div></td>
-    <td class="n">${brl(r.valor)}</td><td class="n">${brl(r.valor/r.meses)}</td><td class="hs tiny">${ml(r.mesPago)}</td>
+    <td class="n">${brl(r.valor)}</td><td class="n">${k>=1&&k<=r.meses?`${k}/${r.meses}`:"—"}</td><td class="hs tiny">${ml(r.mesPago)}</td>
     <td class="tiny" style="white-space:nowrap">${ml(r.inicio)} → ${ml(ratFim(r))} <span class="tiny">(${r.meses}m)</span></td>
     <td><span class="pill ${st.c}">${st.t}</span></td>
     <td style="white-space:nowrap">${ro?"":`<button class="mini ghost" data-rn="${r.id}">Renovar</button> <button class="mini ghost" data-re="${r.id}">Editar</button> <button class="del" data-rd="${r.id}">Excluir</button>`}</td></tr>`}).join("")}</tbody>`;
@@ -2555,8 +2558,9 @@ function ratPrev(){
  $("wRatN").classList.toggle("hide",$("ratMeses").value!=="x");
  $("ratMesTag").textContent=$("ratPago").value==="cartao"?"mês da fatura":"mês em que pagou";
  const v=+$("ratValor").value,n=ratMeses(),ini=$("ratIni").value;
- $("ratPrev").innerHTML=v>0&&n>0&&ini?`<b style="color:var(--ink)">${brl(v/n)} por mês</b> de ${ml(ini)} a ${ml(addM(ini,n-1))}. `+
-  ($("ratPago").value==="avulso"?`No mês do pagamento, ${brl(v)} entram no total líquido.`:`O valor inteiro já aparece na fatura de ${ml($("ratMes").value||ini)}.`):"Preencha valor, meses e início para ver a divisão.";
+ $("ratPrev").innerHTML=v>0&&n>0&&ini?`Cobre <b style="color:var(--ink)">${ml(ini)} a ${ml(addM(ini,n-1))}</b> (${n} ${n===1?"mês":"meses"}). `+
+  ($("ratPago").value==="avulso"?`Os ${brl(v)} entram inteiros no total líquido de ${ml($("ratMes").value||ini)}.`:`Os ${brl(v)} já vêm inteiros na fatura de ${ml($("ratMes").value||ini)}.`)+
+  ` Nos outros meses ele aparece só como cobertura (2/${n}, 3/${n}…) e não soma.`:"Preencha valor, meses e início para ver a cobertura.";
 }
 ["ratValor","ratN","ratIni"].forEach(i=>$(i).oninput=ratPrev);
 $("ratMeses").onchange=$("ratPago").onchange=ratPrev;
@@ -2590,7 +2594,7 @@ $("bRat").onclick=async()=>{
   const ref=S.ratEdit?rref(S.ratEdit):doc(collection(db,"users",S.uid,"rateios"));
   await setDoc(ref,{...r,atualizadoEm:new Date().toISOString()});
   const ed=!!S.ratEdit;ratLimpa();await reload();
-  toast(`${r.nome}: ${brl(r.valor/r.meses)} por mês de ${ml(r.inicio)} a ${ml(addM(r.inicio,r.meses-1))}${ed?" (atualizado)":""}.`,"ok");
+  toast(`${r.nome}: ${brl(r.valor)} em ${ml(r.mesPago)}, cobrindo ${ml(r.inicio)} a ${ml(addM(r.inicio,r.meses-1))}${ed?" (atualizado)":""}.`,"ok");
  }catch(e){toast(dberr(e),"no")}finally{busy($("bRat"),0,"Salvar pagamento");$("bRat").disabled=S.kind==="demo"}
 };
 

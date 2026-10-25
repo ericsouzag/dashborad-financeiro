@@ -236,7 +236,7 @@ input[type=date]{width:100%;background:rgba(255,255,255,.04);border:1px solid va
 .seg button.on[data-r=na]{background:rgba(255,255,255,.1);color:var(--ink)}
 .dg .pend{font-size:11px;color:var(--gold);font-family:var(--mono)}
 .sgk .nm{white-space:normal;overflow-wrap:anywhere}
-@media(max-width:640px){.hs{display:none}#tInv,#tInvG,#tParc,#tRat{min-width:0}#tInv td .s{max-width:15ch}.dg .q{grid-template-columns:1fr}}
+@media(max-width:640px){.hs{display:none}#tInv,#tInvG,#tParc,#tRat,#tTercMes{min-width:0}#tInv td .s{max-width:15ch}.dg .q{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -267,6 +267,7 @@ input[type=date]{width:100%;background:rgba(255,255,255,.04);border:1px solid va
       <div class="ni on" data-v="dash"><svg viewBox="0 0 24 24"><path d="M3 13h6V3H3zM15 21h6V11h-6zM3 21h6v-5H3zM15 8h6V3h-6z"/></svg>Visão geral</div>
       <div class="ni" data-v="lancar"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Lançar o mês</div>
       <div class="ni" data-v="rat"><svg viewBox="0 0 24 24"><path d="M4 6h16v14H4zM4 10h16M8 3v4M16 3v4M8 14h3M13 14h3"/></svg>Pagamentos antecipados</div>
+      <div class="ni" data-v="terc"><svg viewBox="0 0 24 24"><path d="M6 8h12l-1 12H7zM9 8a3 3 0 0 1 6 0"/></svg>Compras de terceiro</div>
       <b style="margin-top:16px">Patrimônio</b>
       <div class="ni" data-v="inv"><svg viewBox="0 0 24 24"><path d="M3 17l6-6 4 4 8-8M15 7h6v6"/></svg>Investimentos</div>
       <b style="margin-top:16px">Cartão C6</b>
@@ -283,6 +284,7 @@ input[type=date]{width:100%;background:rgba(255,255,255,.04);border:1px solid va
     <div class="ni on" data-v="dash"><svg viewBox="0 0 24 24"><path d="M3 13h6V3H3zM15 21h6V11h-6zM3 21h6v-5H3zM15 8h6V3h-6z"/></svg>Visão</div>
     <div class="ni" data-v="lancar"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Lançar</div>
     <div class="ni" data-v="rat"><svg viewBox="0 0 24 24"><path d="M4 6h16v14H4zM4 10h16M8 3v4M16 3v4M8 14h3M13 14h3"/></svg>Rateio</div>
+    <div class="ni" data-v="terc"><svg viewBox="0 0 24 24"><path d="M6 8h12l-1 12H7zM9 8a3 3 0 0 1 6 0"/></svg>Terceiros</div>
     <div class="ni" data-v="inv"><svg viewBox="0 0 24 24"><path d="M3 17l6-6 4 4 8-8M15 7h6v6"/></svg>Investir</div>
     <div class="ni" data-v="comp"><svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Cartão</div>
     <div class="ni" data-v="hist"><svg viewBox="0 0 24 24"><path d="M12 8v4l3 2M3 12a9 9 0 1 0 9-9 9 9 0 0 0-7.5 4M3 4v4h4"/></svg>Meses</div>
@@ -332,23 +334,7 @@ input[type=date]{width:100%;background:rgba(255,255,255,.04);border:1px solid va
         </div>
       </div>
 
-      <div class="glass panel sec" id="parcCard">
-        <div class="st">Compras de terceiro no seu C6<span class="hint">preenchem sozinhas o campo <b id="parcCampo">recebido</b></span></div>
-        <div class="muted" id="parcMes" style="margin-top:8px"></div>
-        <div class="fields">
-          <div class="f"><label for="pDesc">O que foi comprado</label><input type="text" id="pDesc" placeholder="ex.: Tênis"></div>
-          <div class="f"><label for="pValor">Valor total (R$)</label><input type="number" step="0.01" inputmode="decimal" id="pValor" placeholder="ex.: 600,00"></div>
-          <div class="f"><label for="pParc">Parcelas</label><input type="number" step="1" min="1" max="48" inputmode="numeric" id="pParc" value="1"></div>
-          <div class="f"><label for="pData">Data da compra</label><input type="date" id="pData"></div>
-          <div class="f"><label for="pTaxa">Taxa que a pessoa paga (%)</label><input type="number" step="0.1" min="0" max="100" inputmode="decimal" id="pTaxa" value="5"></div>
-          <div class="f"><label for="pTaxaModo">Como paga a taxa</label><select id="pTaxaModo">
-            <option value="parcelas">Dividida em cada parcela</option>
-            <option value="final">De uma vez, no mês depois da última parcela</option></select></div>
-        </div>
-        <div class="tiny" id="pPrev" style="line-height:1.5"></div>
-        <div class="row"><button class="primary mini" id="bParc">Adicionar compra</button><button class="ghost mini hide" id="bParcCancel">Cancelar edição</button></div>
-        <div class="tw" style="margin-top:16px"><table id="tParc"></table></div>
-      </div>
+      <div class="glass panel sec hide" id="parcInfo"></div>
 
       <div class="glass panel sec" id="formCard">
         <div id="editor" class="hide" style="margin-bottom:24px">
@@ -396,6 +382,42 @@ input[type=date]{width:100%;background:rgba(255,255,255,.04);border:1px solid va
         <div class="tw"><table id="tRat"></table></div>
       </div>
       <div class="tiny" style="line-height:1.6;max-width:760px">Como entra no orçamento: o valor inteiro conta só no <b>Total líquido</b> do mês do pagamento (pelo cartão ele já vem na fatura; por Pix, boleto ou débito o app soma sozinho). Nos outros meses cobertos ele aparece só como informação (2/6, 3/6…) e não soma nada.</div>
+    </section>
+
+    <section id="v-terc" class="view hide">
+      <div class="head"><div><div class="eyebrow">compras de outra pessoa no seu C6</div><h1>Compras de terceiro</h1></div></div>
+      <div id="tercSem" class="glass panel empty hide">Para usar esta aba, o mês precisa ter o campo de recebido da pessoa (em <b>Lançar o mês → Editar campos</b>).</div>
+      <div id="tercBody">
+        <div class="kpis" id="kTerc"></div>
+
+        <div class="glass panel sec">
+          <div class="st">Próximos meses<span class="hint">o que vem no seu C6 e o que a pessoa te paga</span></div>
+          <div class="tw" style="margin-top:12px"><table id="tTercMes"></table></div>
+          <div class="tiny" style="margin-top:10px;line-height:1.5">A parcela no seu C6 já faz parte da fatura que você lança; ela não é somada de novo.
+            O que a pessoa te paga (parcela + taxa) entra sozinho no campo <b class="parcCampo">recebido</b> de cada mês e abate do seu total.</div>
+        </div>
+
+        <div class="glass panel sec" id="parcCard">
+          <div class="st" id="parcTitulo">Nova compra<span class="hint">feita pela pessoa no seu cartão C6</span></div>
+          <div class="fields">
+            <div class="f"><label for="pDesc">O que foi comprado</label><input type="text" id="pDesc" placeholder="ex.: Tênis"></div>
+            <div class="f"><label for="pValor">Valor total (R$)</label><input type="number" step="0.01" inputmode="decimal" id="pValor" placeholder="ex.: 600,00"></div>
+            <div class="f"><label for="pParc">Parcelas</label><input type="number" step="1" min="1" max="48" inputmode="numeric" id="pParc" value="1"></div>
+            <div class="f"><label for="pData">Data da compra</label><input type="date" id="pData"></div>
+            <div class="f"><label for="pTaxa">Taxa que a pessoa paga (%)</label><input type="number" step="0.1" min="0" max="100" inputmode="decimal" id="pTaxa" value="5"></div>
+            <div class="f"><label for="pTaxaModo">Como paga a taxa</label><select id="pTaxaModo">
+              <option value="parcelas">Dividida em cada parcela</option>
+              <option value="final">De uma vez, no mês depois da última parcela</option></select></div>
+          </div>
+          <div class="tiny" id="pPrev" style="line-height:1.5"></div>
+          <div class="row"><button class="primary mini" id="bParc">Adicionar compra</button><button class="ghost mini hide" id="bParcCancel">Cancelar edição</button></div>
+        </div>
+
+        <div class="glass panel sec">
+          <div class="st">Compras cadastradas</div>
+          <div class="tw" style="margin-top:12px"><table id="tParc"></table></div>
+        </div>
+      </div>
     </section>
 
     <section id="v-inv" class="view hide">
@@ -1788,6 +1810,7 @@ function prev(){
   ${pv("Gastos brutos",brl(c.bruto))}${pv("Abatido",brl(c.receb))}
   ${c.antecip?pv("Antecipados por Pix/boleto",brl(c.antecip)):""}
   ${pv("TOTAL LÍQUIDO",brl(c.liquido),1)}${pv("Com investimentos",brl(c.comInv),1)}</div>${ratHtml($("mp").value)}`;
+ parcInfo();
 }
 const pv=(l,v,b)=>`<div><div class="kl">${l}</div><div class="kv" style="font-size:${b?22:18}px">${v}</div></div>`;
 
@@ -2426,20 +2449,42 @@ function preencheStev(id){
  const st=$("x-stev");if(!st||st.dataset.manual)return;
  const v=previstoStev(id);st.value=v||"";st.classList.toggle("filled",!!v);
 }
+// resumo de um mês: parte das faturas do C6 que é da pessoa, taxa e o total que ela te paga
+function parcResumo(id){
+ const L=parcDoMes(id);
+ return{L,cartao:r2(L.reduce((s,x)=>s+(x.k<=x.p.parcelas?parcVal(x.p,x.k):0),0)),taxa:r2(L.reduce((s,x)=>s+x.tx,0)),total:r2(L.reduce((s,x)=>s+x.v,0))};
+}
+const parcItem=x=>x.k<=x.p.parcelas?`${esc(x.p.desc)} ${x.k}/${x.p.parcelas}`:`${esc(x.p.desc)} · taxa`;
+function parcCampoLabel(){return(S.schema||SCHEMA_V2).find(f=>f.k==="stev")?.l||"recebido"}
+
+/* aba Compras de terceiro */
 function parcRender(){
- const id=$("mp").value,ro=S.kind==="demo",P=S.parcs||[];
- const campo=currentSchema().find(f=>f.k==="stev");
- $("parcCard").classList.toggle("hide",!campo);if(!campo)return;
- $("parcCampo").textContent=campo.l;$("bParc").disabled=ro;
+ const ro=S.kind==="demo",P=S.parcs||[],hoje=nowId();
+ const tem=(S.schema||SCHEMA_V2).some(f=>f.k==="stev");
+ $("tercSem").classList.toggle("hide",tem);$("tercBody").classList.toggle("hide",!tem);
+ document.querySelectorAll(".parcCampo").forEach(e=>e.textContent=parcCampoLabel());
+ parcInfo();
+ if(!tem)return;
+ $("bParc").disabled=ro;
  if(!$("pData").value)$("pData").value=new Date(Date.now()-new Date().getTimezoneOffset()*6e4).toISOString().slice(0,10);
  pPrev();
- const doMes=parcDoMes(id),tot=r2(doMes.reduce((s,x)=>s+x.v,0)),tx=r2(doMes.reduce((s,x)=>s+x.tx,0)),salvo=S.months.find(x=>x.id===id)?.fields?.stev;
- // próximos meses com valor a receber (a partir do mês seguinte ao escolhido)
- const prox=[];if(id)for(let i=1;i<=24&&prox.length<6;i++){const m=addM(id,i),v=r2(parcDoMes(m).reduce((s,x)=>s+x.v,0));if(v)prox.push(`${ml(m)} ${brl(v)}`)}
- $("parcMes").innerHTML=(!id?"":doMes.length
-  ?`Previsto para <b style="color:var(--ink)">${ml(id)}</b>: <b style="color:var(--ink)">${brl(tot)}</b> (${doMes.length} ${doMes.length===1?"lançamento":"lançamentos"}${tx?`, sendo ${brl(tx)} de taxa`:""}). Abate do total do mês.`+
-   (salvo!==undefined&&r2(+salvo)!==tot?` Lançado no mês: ${brl(+salvo)} (${+salvo>tot?"+":"−"}${brl(Math.abs(+salvo-tot))}).`:"")
-  :`Nada a receber em ${ml(id)}.`)+(prox.length?`<div class="tiny" style="margin-top:6px">Próximos: ${prox.join(" · ")}</div>`:"");
+ // próximos meses: do mês atual até a última parcela ou taxa
+ const fimGeral=P.reduce((f,p)=>{const x=addM(mesFatura(p.data),nMeses(p)-1);return x>f?x:f},hoje);
+ const meses=[];for(let m=hoje;m<=fimGeral&&meses.length<48;m=addM(m,1)){const r=parcResumo(m);if(r.total||m===hoje)meses.push({m,...r})}
+ const agora=meses[0]||{total:0,cartao:0},falta=r2(meses.reduce((s,x)=>s+x.total,0));
+ const ativas=P.filter(p=>mDif(mesFatura(p.data),hoje)+1<=nMeses(p)).length;
+ $("kTerc").innerHTML=
+  kpi("A pessoa te paga — "+ml(hoje),brl(agora.total),agora.cartao?`${brl(agora.cartao)} de parcelas no C6${agora.taxa?` + ${brl(agora.taxa)} de taxa`:""}`:"nada neste mês","",1)+
+  kpi("Falta receber",brl(falta),meses.length>1||agora.total?`até ${ml(fimGeral)}`:"tudo quitado","")+
+  kpi("Compras em andamento",String(ativas),`${P.length} ${P.length===1?"cadastrada":"cadastradas"} no total`,"");
+ $("tTercMes").innerHTML=meses.some(x=>x.total)
+  ?`<thead><tr><th>Mês</th><th class="n">No seu C6</th><th class="n hs">Taxa</th><th class="n">Te paga</th><th class="hs">Compras</th></tr></thead><tbody>${
+    meses.map(x=>`<tr><td style="white-space:nowrap">${ml(x.m)}${x.m===hoje?' <span class="chipx">este mês</span>':""}</td><td class="n">${x.cartao?brl(x.cartao):"—"}</td>
+     <td class="n tiny hs">${x.taxa?brl(x.taxa):"—"}</td><td class="n" style="font-weight:600">${x.total?brl(x.total):"—"}</td>
+     <td class="hs tiny">${x.L.map(parcItem).join(" · ")||"—"}</td></tr>`).join("")}</tbody>
+    <tfoot><tr><td>Total</td><td class="n">${brl(r2(meses.reduce((s,x)=>s+x.cartao,0)))}</td><td class="n tiny hs">${brl(r2(meses.reduce((s,x)=>s+x.taxa,0)))}</td><td class="n">${brl(falta)}</td><td class="hs"></td></tr></tfoot>`
+  :'<tbody><tr><td class="empty" style="padding:20px">Nada a receber nos próximos meses. Cadastre uma compra abaixo.</td></tr></tbody>';
+ const id=hoje;
  if(!P.length){$("tParc").innerHTML='<tbody><tr><td class="empty" style="padding:20px">Nenhuma compra cadastrada.</td></tr></tbody>';return}
  $("tParc").innerHTML=`<thead><tr><th>Compra</th><th class="n">Total</th><th class="n hs">Parcelas</th><th class="hs">Faturas</th><th>Em ${id?ml(id):"—"}</th><th></th></tr></thead><tbody>${
   P.map(p=>{const ini=mesFatura(p.data),fim=addM(ini,nMeses(p)-1),k=id?mDif(ini,id)+1:0;
@@ -2453,7 +2498,9 @@ function parcRender(){
  $("tParc").querySelectorAll("[data-pe]").forEach(b=>b.onclick=()=>{const p=P.find(x=>x.id===b.dataset.pe);S.parcEdit=p.id;
   $("pDesc").value=p.desc;$("pValor").value=p.valor;$("pParc").value=p.parcelas;$("pData").value=p.data;
   $("pTaxa").value=taxaPct(p);$("pTaxaModo").value=taxaModo(p);
-  $("bParc").textContent="Salvar alteração";$("bParcCancel").classList.remove("hide");pPrev()});
+  $("parcTitulo").firstChild.textContent="Editar compra";
+  $("bParc").textContent="Salvar alteração";$("bParcCancel").classList.remove("hide");pPrev();
+  $("parcCard").scrollIntoView({behavior:"smooth",block:"start"})});
  $("tParc").querySelectorAll("[data-pd]").forEach(b=>b.onclick=async()=>{const p=P.find(x=>x.id===b.dataset.pd);
   if(!confirm(`Excluir "${p.desc}" (${brl(p.valor)} em ${p.parcelas}×)?`))return;
   try{await deleteDoc(pcref(p.id));S.parcs=P.filter(x=>x!==p);parcAtualiza();toast("Compra excluída.","ok")}catch(e){toast(dberr(e),"no")}});
@@ -2470,7 +2517,27 @@ function pPrev(){
 $("pTaxaModo").onchange=pPrev;
 // atualiza a lista e o campo do mês sem recarregar o formulário (não perde o que você já digitou)
 function parcAtualiza(){parcRender();preencheStev($("mp").value);prev()}
-function parcLimpa(){S.parcEdit=null;["pDesc","pValor"].forEach(i=>$(i).value="");$("pParc").value=1;$("pTaxa").value=TAXA_PADRAO;$("pTaxaModo").value="parcelas";
+/* aba Lançar: quanto da fatura do C6 é da pessoa e o que ela te paga no mês escolhido */
+function parcInfo(){
+ const box=$("parcInfo"),id=$("mp").value,st=$("x-stev");
+ document.getElementById("c6Terc")?.remove();
+ if(!id||!st||!(S.parcs||[]).length){box.classList.add("hide");return}
+ const r=parcResumo(id),campo=+st.value||0;
+ const c6=$("x-c6");
+ if(c6&&r.cartao)c6.insertAdjacentHTML("afterend",`<div class="tiny" id="c6Terc" style="margin-top:5px">Dessa fatura, ${brl(r.cartao)} são compras de terceiro (${r.L.filter(x=>x.k<=x.p.parcelas).map(parcItem).join(", ")}).</div>`);
+ const dif=r2(campo-r.total);
+ box.classList.remove("hide");
+ box.innerHTML=`<div class="st">Compras de terceiro em ${ml(id)}<span class="hint"><a href="#" id="parcIr" style="color:inherit">ver todos os meses</a></span></div>
+  <div class="muted" style="margin-top:8px;line-height:1.6">${r.total
+   ?`No seu C6: <b style="color:var(--ink)">${brl(r.cartao)}</b> (já dentro da fatura) · taxa ${brl(r.taxa)} · a pessoa te paga <b style="color:var(--ink)">${brl(r.total)}</b>, que entra em <b>${esc(parcCampoLabel())}</b> e abate do total.`
+   :`Nenhuma parcela ou taxa de compra de terceiro neste mês.`}
+   ${Math.abs(dif)>=.01?`<div style="margin-top:8px">O campo está com ${brl(campo)} (${dif>0?"+":"−"}${brl(Math.abs(dif))} do previsto).
+    <button class="mini ghost" id="parcUsar" ${S.kind==="demo"?"disabled":""}>Usar o valor previsto (${brl(r.total)})</button></div>`:""}</div>`;
+ $("parcIr").onclick=e=>{e.preventDefault();go("terc")};
+ const b=$("parcUsar");if(b)b.onclick=()=>{st.value=r.total||"";st.classList.add("filled");st.dataset.manual="1";prev();parcInfo();
+  toast("Valor previsto colocado no campo. Salve o mês para gravar.","ok")};
+}
+function parcLimpa(){S.parcEdit=null;["pDesc","pValor"].forEach(i=>$(i).value="");$("pParc").value=1;$("pTaxa").value=TAXA_PADRAO;$("pTaxaModo").value="parcelas";$("parcTitulo").firstChild.textContent="Nova compra";
  $("bParc").textContent="Adicionar compra";$("bParcCancel").classList.add("hide");pPrev()}
 $("bParcCancel").onclick=parcLimpa;
 $("bParc").onclick=async()=>{

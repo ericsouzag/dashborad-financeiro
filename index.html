@@ -314,9 +314,9 @@ input[type=date]{width:100%;background:rgba(255,255,255,.04);border:1px solid va
       <div class="glass panel sec"><div class="st" id="compTit">Compras por categoria</div>
         <div class="compw"><div class="complg" id="compLeg"></div><div class="chart" style="height:300px"><canvas id="cComp"></canvas></div></div></div>
       <div class="g2">
-        <div class="glass panel sec"><div class="st">Onde o dinheiro foi<span class="hint">últimos 6 meses</span></div>
+        <div class="glass panel sec"><div class="st">Onde o dinheiro foi<span class="hint">cada barra é o total do mês, por origem</span></div>
           <div class="chart" style="height:300px"><canvas id="cStack"></canvas></div></div>
-        <div class="glass panel sec"><div class="st">Recorrentes<span class="hint">últimos 6 meses</span></div>
+        <div class="glass panel sec"><div class="st">Recorrentes<span class="hint">soma das contas fixas recorrentes por mês</span></div>
           <div class="chart" style="height:300px"><canvas id="cRec"></canvas></div></div>
       </div>
       <div class="glass panel sec"><div class="st">Gastos do mês x média<span class="hint" id="fixHint"></span></div>
@@ -2057,17 +2057,16 @@ function dash(){
  chart("cComp","doughnut",parts.map(p=>`${p[0]} · ${Math.round(p[1]/pt*100)}%`),
   [{l:"Valor",d:parts.map(p=>p[1]),c:parts.map(p=>p[2])}],{cutout:"58%",legend:false});
 
- // os dois gráficos lado a lado, com os últimos 6 meses
- const u6=u.slice(-6);
- chart("cStack","bar",u6.map(m=>ml(m.id)),[
-  {l:"C6",d:u6.map(m=>+m.fields?.c6||0),c:"#1d4ed8"},
-  {l:"Itaú",d:u6.map(m=>+m.fields?.itau||0),c:"#7dd3fc"},
-  {l:"Recorrentes",d:u6.map(m=>groupSum(m,"recorrente")),c:"#38bdf8"},
-  {l:"Não recorrentes",d:u6.map(m=>groupSum(m,"naoRecorrente")),c:"#c084fc"},
-  {l:"Investimentos",d:u6.map(m=>m.inv),c:"#ffcf2d"}],{stacked:1});
- chart("cRec","line",u6.map(m=>ml(m.id)),[
-  {l:"Recorrentes",d:u6.map(m=>groupSum(m,"recorrente")),c:"#38bdf8",area:1,fill:"rgba(56,189,248,.10)"},
-  {l:"Não recorrentes",d:u6.map(m=>groupSum(m,"naoRecorrente")),c:"#c084fc"}]);
+ // os dois gráficos lado a lado, com todos os meses
+ chart("cStack","bar",u.map(m=>ml(m.id)),[
+  {l:"C6",d:u.map(m=>+m.fields?.c6||0),c:"#1d4ed8"},
+  {l:"Itaú",d:u.map(m=>+m.fields?.itau||0),c:"#7dd3fc"},
+  {l:"Recorrentes",d:u.map(m=>groupSum(m,"recorrente")),c:"#38bdf8"},
+  {l:"Não recorrentes",d:u.map(m=>groupSum(m,"naoRecorrente")),c:"#c084fc"},
+  {l:"Investimentos",d:u.map(m=>m.inv),c:"#ffcf2d"}],{stacked:1});
+ // só as contas recorrentes, para ver se sobem ou descem
+ chart("cRec","line",u.map(m=>ml(m.id)),[
+  {l:"Recorrentes",d:u.map(m=>groupSum(m,"recorrente")),c:"#38bdf8",area:1,fill:"rgba(56,189,248,.10)"}],{legend:false});
 
  // gastos do mês x média, em barras horizontais com o nome de cada conta
  const sc=schemaOf(last).filter(f=>["recorrente","naoRecorrente"].includes(f.g)&&((+last.fields?.[f.k]||0)||meanOf(f.k)));

@@ -225,6 +225,14 @@ input[type=date]{width:100%;background:rgba(255,255,255,.04);border:1px solid va
 .complg .t{display:flex;justify-content:space-between;gap:10px;font-weight:600;padding:7px 0;border-bottom:1px solid var(--line)}
 .complg .i{display:flex;justify-content:space-between;gap:10px;color:var(--dim);padding-left:16px}
 .complg .i span:last-child,.complg .t span:last-child{font-family:var(--mono);font-size:12px;white-space:nowrap}
+/* Investimentos: descrição de cada gráfico */
+.lead{color:var(--dim);font-size:13px;line-height:1.55;margin-top:6px;max-width:80ch}
+.como{margin-top:12px;padding:11px 13px;border-radius:var(--r-sm);background:rgba(255,255,255,.03);border:1px solid var(--line);font-size:12.8px;color:var(--dim);line-height:1.6}
+.como b{color:var(--ink);font-weight:600}.como .kl{margin-bottom:4px}
+.herow{display:grid;grid-template-columns:minmax(0,230px) minmax(0,1fr);gap:20px;align-items:center;margin-top:14px}
+@media(max-width:760px){.herow{grid-template-columns:1fr}}
+.perbar{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;padding:12px 16px;position:sticky;top:8px;z-index:20;background:rgba(10,14,26,.92);backdrop-filter:blur(14px)}
+.big{font-family:var(--disp);font-size:44px;font-weight:700;letter-spacing:-.02em;line-height:1.05;margin:4px 0}
 /* Lançamentos: bloco dos cartões com abatimentos */
 .calc{padding:11px 13px;border:1px dashed var(--line2);border-radius:var(--r-sm);font-family:var(--mono);font-size:14px;color:var(--ink);min-height:44px;display:flex;align-items:center}
 .f.wide{grid-column:1/-1}
@@ -452,6 +460,73 @@ input[type=date]{width:100%;background:rgba(255,255,255,.04);border:1px solid va
       <div id="invBody">
         <div class="kpis" id="kInv"></div>
 
+        <div id="evoBox">
+          <div class="glass panel sec perbar">
+            <div><div class="kl" style="margin:0">Período de apuração</div><div class="tiny" id="perTxt"></div></div>
+            <div class="flt" id="perSel" role="group" aria-label="Período de apuração" style="margin:0"></div>
+          </div>
+          <!-- 1. a pergunta principal: quanto a carteira rende por ano -->
+          <div class="glass panel sec hero">
+            <div class="st">Quanto sua carteira rende por ano</div>
+            <div class="lead">Quanto o seu dinheiro cresceu, em média, a cada ano, contando o dia em que cada real entrou e saiu, a valorização e os proventos.
+              Ao lado, o mesmo dinheiro, nas mesmas datas, aplicado em cada referência.</div>
+            <div class="herow">
+              <div><div class="kl">Sua carteira</div><div class="big" id="heroTir">—</div><div class="tiny" id="heroSub"></div></div>
+              <div class="chart" style="height:260px"><canvas id="cTirRef"></canvas></div>
+            </div>
+            <div class="como" id="heroComo"></div>
+          </div>
+
+          <!-- 2. ano a ano -->
+          <div class="glass panel sec"><div class="st">Ano a ano: carteira × CDI × inflação</div>
+            <div class="lead">Quanto a carteira rendeu em cada ano do calendário, comparado ao CDI (a renda fixa "padrão") e ao IPCA (a inflação). Aqui conta só o desempenho dos ativos, não quanto você aportou.</div>
+            <div class="chart" style="height:300px"><canvas id="cAnos"></canvas></div>
+            <div class="como" id="anosComo"></div></div>
+
+          <!-- 3. evolução em reais -->
+          <div class="glass panel sec"><div class="st">Quanto você colocou × quanto tem<span class="hint" id="evoHint"></span></div>
+            <div class="lead">A linha amarela é o dinheiro que você tirou do bolso e deixou investido (aplicações menos resgates). A área azul é quanto a carteira valia em cada mês. Quando o azul fica acima do amarelo, você está ganhando.</div>
+            <div class="chart" style="height:320px"><canvas id="cEvo"></canvas></div>
+            <div class="como" id="evoComo"></div></div>
+
+          <div class="g2">
+            <!-- 4. por grupo -->
+            <div class="glass panel sec"><div class="st">Quanto cada grupo rende por ano</div>
+              <div class="lead">O mesmo cálculo do topo, separado por tipo de investimento, com o CDI do período como régua.</div>
+              <div class="chart" style="height:280px"><canvas id="cTirG"></canvas></div>
+              <div class="como" id="tirComo"></div></div>
+            <!-- 5. risco -->
+            <div class="glass panel sec"><div class="st">Quanto a carteira já caiu</div>
+              <div class="lead">A distância, em %, entre o valor da carteira em cada mês e o maior valor que ela já tinha alcançado, sem contar os aportes. Zero = no recorde; −10% = 10% abaixo do recorde.</div>
+              <div class="chart" style="height:280px"><canvas id="cDD"></canvas></div>
+              <div class="como" id="ddComo"></div></div>
+          </div>
+
+          <div class="g2">
+            <!-- 6. onde está o dinheiro -->
+            <div class="glass panel sec"><div class="st">Em qual instituição está o dinheiro</div>
+              <div class="lead">A parte da carteira em cada corretora ou banco.</div>
+              <div class="chart" style="height:280px"><canvas id="cInst"></canvas></div>
+              <div class="como" id="instComo"></div></div>
+            <div class="glass panel sec"><div class="st">Maiores posições<span class="hint" id="concHint"></span></div>
+              <div class="lead">Os investimentos com mais dinheiro. O mesmo ativo em corretoras diferentes conta uma vez só; CDBs se juntam pelo banco emissor.</div>
+              <div class="chart" id="concBox" style="height:320px"><canvas id="cConc"></canvas></div>
+              <div class="como" id="concComo"></div></div>
+          </div>
+
+          <div class="glass panel sec"><div class="st">Rumo à aposentadoria<span class="hint">valores em dinheiro de hoje</span></div>
+            <div class="lead">Onde a carteira chega até a data da aposentadoria, com o aporte por mês abaixo, em três cenários de rendimento acima da inflação. A linha tracejada é o patrimônio que paga a renda que você quer.</div>
+            <div class="fields" style="margin-top:10px">
+              <div class="f"><label for="apMeta">Renda por mês desejada (R$)</label><input type="number" step="100" inputmode="decimal" id="apMeta"></div>
+              <div class="f"><label for="apAnos">Em quantos anos</label><input type="number" step="1" min="1" max="60" inputmode="numeric" id="apAnos"></div>
+              <div class="f"><label for="apAporte">Aporte por mês (R$)</label><input type="number" step="50" inputmode="decimal" id="apAporte"></div>
+              <div class="f"><label for="apTaxa">Retirada anual na aposentadoria (%)</label><input type="number" step="0.1" min="1" max="10" inputmode="decimal" id="apTaxa"></div>
+            </div>
+            <div class="chart" style="height:300px"><canvas id="cApos"></canvas></div>
+            <div class="tw" style="margin-top:12px"><table id="tApos"></table></div>
+            <div class="como" id="aposNota"></div></div>
+        </div>
+
         <div class="glass panel sec">
           <div class="st">Balanço: está valorizando?<span class="hint">ativos que você tem hoje × o que pagou</span></div>
           <div class="eqv" id="invEq"></div>
@@ -500,6 +575,12 @@ input[type=date]{width:100%;background:rgba(255,255,255,.04);border:1px solid va
           <div class="tw"><table id="tInv"></table></div>
           <div class="tiny" style="margin-top:10px;line-height:1.5">Variação = valor atual − valor investido. Retorno c/ proventos soma também o que o ativo já pagou. CDBs, Tesouro e fundos acumulam o rendimento no próprio valor.
             <span id="invNotaTxt"></span></div>
+        </div>
+
+        <div class="glass panel sec" id="realBox">
+          <div class="st">Vendas e resgates<span class="hint">ganho já realizado</span></div>
+          <div class="tw" style="margin-top:12px;max-height:420px;overflow-y:auto"><table id="tReal"></table></div>
+          <div class="tiny" id="realNota" style="margin-top:8px;line-height:1.5"></div>
         </div>
 
         <div id="dgOv" class="dg-ov hide" role="dialog" aria-modal="true" aria-labelledby="dgTit">
@@ -1981,12 +2062,12 @@ Chart.defaults.color="#8b97b0";Chart.defaults.font.family="Inter";Chart.defaults
 function chart(id,type,labels,ds,o={}){
  CH[id]?.destroy();const cv=$(id);if(!cv)return;
  const dough=type==="doughnut";
- CH[id]=new Chart(cv.getContext("2d"),{type,data:{labels,datasets:ds.map(d=>({
-   label:d.l,data:d.d,backgroundColor:d.fill||d.c,
-   borderColor:dough?"#080b14":d.c,borderWidth:dough?3:(type==="line"?2.2:0),
-   hoverOffset:dough?7:0,tension:.35,pointRadius:type==="line"?3:0,pointBackgroundColor:d.c,
-   borderRadius:dough?0:5,fill:!!d.area,stack:o.stacked?"s":undefined,
- }))},options:{responsive:true,maintainAspectRatio:false,
+ CH[id]=new Chart(cv.getContext("2d"),{type,data:{labels,datasets:ds.map(d=>{const ln=(d.type||type)==="line";return{
+   label:d.l,data:d.d,backgroundColor:d.fill||d.c,...(d.type?{type:d.type}:{}),
+   borderColor:dough?"#080b14":d.c,borderWidth:dough?3:(ln?2.2:0),borderDash:d.dash,
+   hoverOffset:dough?7:0,tension:.35,pointRadius:ln?(o.pontos===false?0:3):0,pointBackgroundColor:d.c,
+   borderRadius:dough?0:5,fill:!!d.area,stack:o.stacked?"s":undefined,spanGaps:true,
+ }})},options:{responsive:true,maintainAspectRatio:false,
   indexAxis:o.horizontal?"y":"x",interaction:{intersect:false,mode:"index"},
   plugins:{legend:{display:o.legend!==false,labels:{boxWidth:9,boxHeight:9,usePointStyle:true,pointStyle:"circle",padding:15}},
    tooltip:{backgroundColor:"rgba(8,12,22,.96)",borderColor:"rgba(255,255,255,.14)",borderWidth:1,padding:11,
@@ -2181,12 +2262,240 @@ function invRender(){
  $("invPeriod").textContent=`carteira · valores de ${iso(S.cart.dataBase)}`;
  $("invFontes").textContent=(S.cart.fontes||[]).length+" fontes · "+S.cart.ativos.length+" ativos";
  const insts=new Set(S.cart.ativos.map(a=>a.instituicao)).size;
+ const E=S.cart.evolucao,tr=E?tirCarteira():null,real=E?ganhoRealizado():null;
  $("kInv").innerHTML=
   kpi("Patrimônio investido",brl(t.valor),`${S.cart.ativos.length} ativos em ${insts} instituições`,"",1)+
-  kpi("Ganho total",sR(ganho),`${sP(ganho/t.custo)} sobre ${brl(t.custo)} investidos`,ganho>=0?"dn":"up")+
+  kpi("Ganho nas posições atuais",sR(ganho),`valorização ${sR(val)} + proventos ${brl(t.prov)} · ${sP(ganho/t.custo)} sobre ${brl(t.custo)}`,ganho>=0?"dn":"up")+
+  (real?kpi("Ganho já realizado",sR(real.total),`vendas e resgates ${sR(real.vendas)} + proventos de ativos que saíram ${brl(real.prov)}`,real.total>=0?"dn":"up"):"")+
+  (tr?kpi("Rendimento ao ano",pct(tr.tir),`descontada a inflação: ${pct(tr.real)} · CDI no mesmo período: ${pct(tr.cdi)}`,tr.tir>=tr.cdi?"dn":"up",1):"")+
   kpi("Renda passiva — média",brl(r.media)+"/mês",`${brl(r.total)} nos últimos 12 meses`,"")+
-  kpi("Rendimento anual",t.valor?pct(r.total/t.valor):"—","proventos de 12 meses ÷ patrimônio","",1);
- invBalanco(t,val);invRenda(r);invAportes();invDivisao(t);invSug();invTabela();invOps();
+  kpi("Proventos ÷ patrimônio",t.valor?pct(r.total/t.valor):"—","renda dos últimos 12 meses sobre o valor de hoje (não é a valorização)","",1);
+ invBalanco(t,val);invRenda(r);invAportes();invDivisao(t);invSug();invTabela();invOps();evoRender(t,tr);realRender(real);
+}
+
+/* ═══ EVOLUÇÃO, RENDIMENTO E RISCO ═══
+   Base: evolucao (gerada pelo exportar-app.js) = fluxos de dinheiro, série mensal estimada e referências.
+   · TIR: retorno ponderado pelo dinheiro (taxa que zera o valor presente dos fluxos).
+   · Retorno real: equação de Fisher, (1+nominal)/(1+IPCA)−1.
+   · Queda a partir do pico: sobre o índice de retorno ponderado pelo tempo (padrão GIPS), que tira o efeito dos aportes.
+   · Concentração: índice Herfindahl-Hirschman (soma dos pesos ao quadrado); 1/HHI = número efetivo de ativos.
+   · Aposentadoria: capital = renda anual ÷ taxa de retirada (Bengen, 1994); aportes mensais a juro real composto. */
+const anos=(a,b)=>(new Date(b)-new Date(a))/864e5/365.25;
+function xirr(f,fim){
+ if(!f.some(x=>x[1]<0)||!f.some(x=>x[1]>0))return NaN;
+ // valor de todos os fluxos levados até a data final; a TIR é a taxa que zera essa soma
+ const vp=r=>f.reduce((s,[d,v])=>s+v*Math.pow(1+r,anos(d,fim)),0);
+ let lo=-.95,hi=3;if(vp(lo)*vp(hi)>0)return NaN;
+ for(let i=0;i<200;i++){const m=(lo+hi)/2;(vp(m)>0)===(vp(lo)>0)?lo=m:hi=m}return(lo+hi)/2;
+}
+// fluxos da exportação + operações registradas no app depois dela
+function fluxosCarteira(){
+ const E=S.cart.evolucao,ch=E.chaves||{},gen=S.cart.geradoEm||"";
+ const f=E.fluxos.map(x=>({d:x[0],v:x[1],g:ch[x[2]]?.g||"Outros",k:x[2],t:x[3],e:!!x[4]}));
+ for(const o of S.ops||[])if((o.criadoEm||"")>gen)f.push({d:o.data,v:o.tipo==="venda"?o.total:-o.total,g:o.grupo,k:`${o.codigo}|${o.instituicao}`,t:o.tipo==="venda"?"r":"a"});
+ return f;
+}
+function tirCarteira(){
+ const E=S.cart.evolucao,fim=S.cart.dataBase,F=fluxosCarteira(),t=tot();
+ const tirDe=(L,valor)=>xirr([...L.map(x=>[x.d,x.v]),[fim,valor]],fim);
+ const tir=tirDe(F,t.valor);
+ const porG=Object.fromEntries(GRP.map(g=>[g,tirDe(F.filter(x=>x.g===g),t.g[g].valor)]));
+ // inflação e CDI "no mesmo fluxo": a taxa que o mesmo dinheiro, nas mesmas datas, teria rendido em cada um
+ const noFluxo=k=>{const fv=E.comparacao?.[k]?.at(-1);return fv?xirr([...F.filter(x=>x.t!=="p").map(x=>[x.d,x.v]),[fim,fv]],fim):NaN};
+ const ipcaA=noFluxo("IPCA"),cdi=noFluxo("CDI");
+ // retorno real pela equação de Fisher
+ return{tir,real:(1+tir)/(1+ipcaA)-1,ipcaA,cdi,porG};
+}
+function ganhoRealizado(){
+ const E=S.cart.evolucao,atuais=new Set(S.cart.ativos.map(a=>`${a.codigo}|${a.instituicao}`));
+ const vendas=(E.realizado||[]).reduce((s,x)=>s+x.ganho,0);
+ const prov=E.fluxos.filter(x=>x[3]==="p"&&!atuais.has(x[2])&&!x[2].startsWith("proventos|")).reduce((s,x)=>s+x[1],0);
+ return{vendas:r2(vendas),prov:r2(prov),total:r2(vendas+prov),est:(E.realizado||[]).some(x=>x.e)};
+}
+
+// rendimento mensal da carteira sem o efeito dos aportes (retorno ponderado pelo tempo, padrão GIPS):
+// aportes do mês entram no começo do mês; proventos recebidos contam como ganho
+function retornosMensais(sr){
+ const out=[];
+ for(let i=1;i<sr.length;i++){const base=sr[i-1].pat+sr[i].fluxo;out.push({m:sr[i].m,r:base>50?(sr[i].pat+sr[i].provMes)/base-1:0,pat:sr[i].pat})}
+ return out;
+}
+const pp=v=>isFinite(v)?pct(v):"—";
+const ptxt=v=>isFinite(v)?(v*100).toFixed(1).replace(".",",")+"%":"—";
+
+/* período de apuração: os cálculos começam com o valor da carteira no fim do mês anterior ao período
+   (como se fosse uma aplicação nessa data) e seguem com as aplicações, resgates e proventos de dentro dele */
+const PERIODOS=[["6","6 meses"],["12","12 meses"],["24","2 anos"],["2025","Desde 2025"],["tudo","Desde o início"]];
+function perInicio(sr){
+ const p=S.cartCfg?.periodo||"tudo",n=sr.length-1;
+ if(p==="tudo")return 0;
+ if(/^\d{4}$/.test(p)&&+p>1900){const i=sr.findIndex(x=>x.m>=p+"-01");return i<0?0:i}
+ return Math.max(0,n-(+p)+1);
+}
+function calcPeriodo(i0){
+ const E=S.cart.evolucao,sr=E.serie,fim=S.cart.dataBase,t=tot(),F=fluxosCarteira(),ms=E.meses,ult=ms.length-1;
+ const m0=sr[i0].m,dIni=i0>0?sr[i0-1].m+"-28":null;
+ const dentro=F.filter(x=>x.d.slice(0,7)>=m0);
+ const V0=i0>0?sr[i0-1].pat:0,V0g=g=>i0>0?(sr[i0-1].g?.[g]||0):0;
+ const tirDe=(L,v0,vf)=>xirr([...(v0>0?[[dIni,-v0]]:[]),...L.map(x=>[x.d,x.v]),[fim,vf]],fim);
+ // o mesmo capital inicial e os mesmos fluxos aplicados em cada referência
+ const refVal=nome=>{const s=E.indices?.[nome];if(!s||!s[ult])return NaN;const iE=s[ult];let v=0;
+  if(V0>0&&s[i0-1])v+=V0*iE/s[i0-1];
+  for(const x of dentro)if(x.t!=="p"){const l=s[ms.indexOf(x.d.slice(0,7))]||iE;v+=-x.v*iE/l}
+  return v};
+ const refs={};for(const nome of Object.keys(E.indices||{})){const v=refVal(nome);if(isFinite(v)&&v>0)refs[nome]={v,tir:tirDe(dentro.filter(x=>x.t!=="p"),V0,v)}}
+ const tir=tirDe(dentro,V0,t.valor),ipcaA=refs.IPCA?.tir,cdi=refs.CDI?.tir;
+ const prov=dentro.filter(x=>x.t==="p").reduce((s,x)=>s+x.v,0),aplic=dentro.filter(x=>x.t!=="p").reduce((s,x)=>s-x.v,0);
+ return{i0,m0,V0,tir,real:(1+tir)/(1+ipcaA)-1,ipcaA,cdi,refs,prov,aplic,
+  porG:Object.fromEntries(GRP.map(g=>[g,tirDe(dentro.filter(x=>x.g===g),V0g(g),t.g[g].valor)]))};
+}
+function perRender(){
+ const p=S.cartCfg?.periodo||"tudo";
+ $("perSel").innerHTML=PERIODOS.map(([k,l])=>`<button class="${p===k?"on":""}" data-per="${k}" aria-pressed="${p===k}">${l}</button>`).join("");
+ $("perSel").querySelectorAll("[data-per]").forEach(b=>b.onclick=async()=>{
+  S.cartCfg={...S.cartCfg,periodo:b.dataset.per};const t=tot();evoRender(t);invRenda(renda12());
+  if(S.kind!=="demo")try{await setDoc(ccref(),S.cartCfg)}catch(e){toast(dberr(e),"no")}});
+}
+
+function evoRender(t){
+ const E=S.cart.evolucao;$("evoBox").classList.toggle("hide",!E);if(!E)return;
+ perRender();
+ const sr=E.serie,n=sr.length-1,ms=E.meses;
+ const i0=perInicio(sr),P=calcPeriodo(i0),per=ml(P.m0)+" a "+ml(sr[n].m);
+ const curto=n-i0+1<12;
+ $("perTxt").textContent=`${per} · ${n-i0+1} ${n-i0+1===1?"mês":"meses"}${i0>0?` · começa com a carteira valendo ${brl(P.V0)}`:""}`;
+
+ // 1) quanto rende por ano: TIR da carteira e das referências com o mesmo dinheiro
+ const nomes={CDI:"CDI (renda fixa padrão)",IPCA:"Inflação (IPCA)",Ibovespa:"Ibovespa (ações Brasil)",IFIX:"IFIX (fundos imobiliários)","S&P 500 (R$)":"S&P 500 em reais (ações EUA)"};
+ const barras=[["Sua carteira",P.tir],...Object.entries(P.refs).map(([k,v])=>[nomes[k]||k,v.tir])].filter(x=>isFinite(x[1])).sort((a,b)=>b[1]-a[1]);
+ chart("cTirRef","bar",barras.map(x=>`${x[0]} · ${ptxt(x[1])}`),[{l:"Rendimento ao ano",d:barras.map(x=>r2(x[1]*100)),c:barras.map(x=>x[0]==="Sua carteira"?"#3d8bff":"rgba(255,255,255,.25)")}],{horizontal:1,legend:false});
+ CH.cTirRef.options.scales.x.ticks.callback=v=>v+"%";CH.cTirRef.options.plugins.tooltip.callbacks.label=c=>` ${String(c.parsed.x).replace(".",",")}% ao ano`;CH.cTirRef.update();
+ $("heroTir").textContent=ptxt(P.tir)+" ao ano";$("heroTir").className="big "+(P.tir>=0?"gain":"loss");
+ $("heroSub").innerHTML=`${per} · ${isFinite(P.real)?`${ptxt(P.real)} ao ano acima da inflação`:""}`;
+ const pts=v=>(Math.abs(v)*100).toFixed(1).replace(".",",")+(Math.abs(v*100)>=1.95||Math.abs(v*100)<0.95?" pontos":" ponto");
+ const dCdi=P.tir-P.cdi,hoje=t.valor+P.prov;
+ $("heroComo").innerHTML=`<div class="kl">Como ler</div>
+  Barras maiores = rendeu mais. A sua carteira é a barra azul; as cinzas mostram quanto o mesmo dinheiro, nas mesmas datas, teria rendido em cada referência. Mude o período no topo para ver outras épocas.<br>
+  <b>Resumo (${per}):</b> sua carteira rendeu o equivalente a <b>${ptxt(P.tir)} ao ano</b>, contra ${ptxt(P.ipcaA)} de inflação: ${P.real>=0?`seu poder de compra cresceu <b>${ptxt(P.real)} ao ano</b>`:`seu poder de compra caiu <b>${ptxt(-P.real)} ao ano</b>`}.
+  ${isFinite(dCdi)?(dCdi>=0?`Ficou <b>${pts(dCdi)} acima do CDI</b>.`:`Ficou <b>${pts(dCdi)} abaixo do CDI</b>${P.refs.CDI?`: com tudo no CDI, hoje você teria ${brl(P.refs.CDI.v)}, contra ${brl(hoje)} (carteira + proventos recebidos no período)`:""}.`):""}<br>
+  <span class="tiny">${i0>0?`O cálculo começa com a carteira valendo ${brl(P.V0)} no fim de ${ml(sr[i0-1].m)} e soma ${P.aplic>=0?brl(P.aplic)+" de aplicações (menos resgates)":"os resgates ("+brl(-P.aplic)+" a mais do que as aplicações)"} e ${brl(P.prov)} de proventos do período. `:""}${curto?"Em períodos menores que 12 meses, a taxa é convertida para ao ano e oscila bastante. ":""}Método: taxa interna de retorno (TIR). Ibovespa inclui dividendos; S&P 500 é só o preço, convertido para reais; IFIX pelo ETF XFIX11.</span>`;
+
+ // 2) ano a ano (retorno ponderado pelo tempo de cada ano do calendário), só os anos do período
+ const RM=retornosMensais(sr).filter(x=>x.m>=P.m0),anosL=[...new Set(RM.map(x=>x.m.slice(0,4)))];
+ const ac=(L,f)=>L.reduce((p,x)=>p*(1+f(x)),1)-1;
+ const linhas=anosL.map(a=>{const L=RM.filter(x=>x.m.startsWith(a));
+  return{a,cart:ac(L,x=>x.r),cdi:ac(L,x=>E.referencias.cdi[x.m]??0),ipca:ac(L,x=>E.referencias.ipca[x.m]??0),
+   peq:L.reduce((s,x)=>s+x.pat,0)/L.length<5000,parcial:L.length<12,meses:L.length}});
+ const conf=linhas.filter(x=>!x.peq),fora=linhas.filter(x=>x.peq),L2=conf.length?conf:linhas;
+ const rot=x=>x.a+(x.parcial?` (${x.meses} ${x.meses===1?"mês":"meses"})`:"");
+ chart("cAnos","bar",L2.map(rot),[
+  {l:"Sua carteira",d:L2.map(x=>r2(x.cart*100)),c:"#3d8bff"},
+  {l:"CDI",d:L2.map(x=>r2(x.cdi*100)),c:"rgba(61,220,151,.75)"},
+  {l:"Inflação (IPCA)",d:L2.map(x=>r2(x.ipca*100)),c:"rgba(192,132,252,.75)"}]);
+ CH.cAnos.options.scales.y.ticks.callback=v=>v+"%";CH.cAnos.options.plugins.tooltip.callbacks.label=c=>` ${c.dataset.label}: ${String(c.parsed.y).replace(".",",")}%`;CH.cAnos.update();
+ const ganhou=conf.filter(x=>x.cart>x.cdi).map(x=>x.a),perdeu=conf.filter(x=>x.cart<=x.cdi).map(x=>x.a);
+ $("anosComo").innerHTML=`<div class="kl">Como ler</div>
+  Para cada ano, três barras: azul = sua carteira, verde = CDI, roxo = inflação. Azul acima do verde = ano melhor que a renda fixa; azul abaixo do roxo = perdeu da inflação naquele ano.
+  Quando o ano aparece com "(N meses)", conta só os meses que estão dentro do período escolhido.<br>
+  <b>Resumo:</b> ${conf.length?conf.map(x=>`${rot(x)}: <b>${ptxt(x.cart)}</b> contra ${ptxt(x.cdi)} do CDI e ${ptxt(x.ipca)} de inflação`).join(" · ")+".":"no período, a carteira ainda tinha menos de R$ 5 mil."}
+  ${ganhou.length?`<br>Ganhou do CDI em ${ganhou.join(", ")}.`:""}${perdeu.length?`<br>Ficou abaixo do CDI em ${perdeu.join(" e ")}.`:""}
+  ${fora.length&&conf.length?`<br><span class="tiny">Fora do gráfico: ${fora.map(x=>`${x.a} (${ptxt(x.cart)})`).join(", ")} — a carteira tinha menos de R$ 5 mil, e um ou dois ativos mexiam muito na porcentagem.</span>`:""}`;
+
+ // 3) quanto colocou x quanto tem, no período
+ const j0=Math.max(0,i0-1),SR=sr.slice(j0);
+ const sI=E.indices?.CDI,cdiLinha=sI?SR.map((x,i)=>{const jm=j0+i;let v=i0>0?P.V0*sI[jm]/sI[i0-1]:0;
+  for(const f of fluxosCarteira())if(f.t!=="p"&&f.d.slice(0,7)>=P.m0&&f.d.slice(0,7)<=x.m){const l=sI[ms.indexOf(f.d.slice(0,7))]||sI[jm];v+=-f.v*sI[jm]/l}return r2(v)}):null;
+ const base=i0>0?SR[0].aplicado:0,colocado=SR.map(x=>r2(x.aplicado-base+(i0>0?P.V0:0)));
+ chart("cEvo","line",SR.map(x=>ml(x.m)),[
+  {l:"Quanto a carteira vale",d:SR.map(x=>x.pat),c:"#3d8bff",area:1,fill:"rgba(61,139,255,.12)"},
+  {l:i0>0?"Valor inicial + o que você colocou":"Quanto você colocou",d:colocado,c:"#ffcf2d"},
+  ...(cdiLinha?[{l:"Se o mesmo dinheiro estivesse no CDI",d:cdiLinha,c:"rgba(61,220,151,.8)",dash:[5,4]}]:[])],{pontos:false});
+ const col=colocado.at(-1),ganho=t.valor+P.prov-col;
+ $("evoHint").textContent=per;
+ $("evoComo").innerHTML=`<div class="kl">Como ler</div>
+  A distância entre o azul e o amarelo é o seu ganho (ou perda) em reais. Degraus para cima no amarelo = meses com aporte; para baixo = resgates. ${i0>0?"Com um período escolhido, o amarelo começa no valor que a carteira tinha no início dele. ":""}A linha verde tracejada mostra onde estaria o mesmo dinheiro se tivesse ido todo para o CDI.<br>
+  <b>Resumo:</b> ${i0>0?`a carteira começou o período valendo <b>${brl(P.V0)}</b>, ${P.aplic>=0?`você colocou mais <b>${brl(P.aplic)}</b>`:`você resgatou <b>${brl(-P.aplic)}</b> a mais do que aplicou`}`:`você colocou <b>${brl(col)}</b>`} e hoje tem <b>${brl(t.valor)}</b>, mais <b>${brl(P.prov)}</b> recebidos em proventos: <b class="${gc(ganho)}">${sR(ganho)}</b> no período.<br>
+  <span class="tiny">Os meses passados são estimados: ações, FIIs, ETFs e BDRs pela cotação de fim de mês; renda fixa e fundos pelo CDI. O mês atual é o valor real.</span>`;
+
+ // 4) por grupo
+ const gs=GRP.filter(g=>isFinite(P.porG[g]));
+ chart("cTirG","bar",[...gs.map(g=>[g,ptxt(P.porG[g])]),["CDI no período",ptxt(P.cdi)]],[{l:"Ao ano",d:[...gs.map(g=>r2(P.porG[g]*100)),r2(P.cdi*100)],
+  c:[...gs.map(g=>GCOR[g]),"rgba(255,255,255,.25)"]}],{legend:false});
+ CH.cTirG.options.scales.y.ticks.callback=v=>v+"%";CH.cTirG.options.plugins.tooltip.callbacks.label=c=>` ${String(c.parsed.y).replace(".",",")}% ao ano`;CH.cTirG.update();
+ const melhor=[...gs].sort((a,b)=>P.porG[b]-P.porG[a]);
+ $("tirComo").innerHTML=`<div class="kl">Como ler</div>
+  Cada barra é quanto aquele grupo rendeu por ano no período escolhido. A barra cinza é o CDI no mesmo período, para comparar.<br>
+  <b>Resumo (${per}):</b> ${melhor.map(g=>`${g} ${ptxt(P.porG[g])}`).join(" · ")}. ${melhor.length?`O que mais rendeu foi <b>${melhor[0]}</b>; o que menos rendeu, <b>${melhor.at(-1)}</b>.`:""}
+  <span class="tiny">Grupos com pouco tempo ou pouco dinheiro oscilam mais (o exterior, por exemplo, entrou quase todo em nov/2025).</span>`;
+
+ // 5) quanto já caiu, no período (a partir de quando a carteira passou de R$ 5 mil)
+ const RA=retornosMensais(sr),k0=Math.max(RA.findIndex(x=>x.m>=P.m0),RA.findIndex(x=>x.pat>=5000),0);
+ let idx=1,pico=1,pior=0,quando="";const dd=[];
+ for(const x of RA.slice(k0)){idx*=1+x.r;pico=Math.max(pico,idx);const q=idx/pico-1;if(q<pior){pior=q;quando=x.m}dd.push(r2(q*100))}
+ const RL=RA.slice(k0),twr=Math.pow(idx,12/Math.max(1,RL.length))-1,atualDD=dd.at(-1)||0;
+ chart("cDD","line",RL.map(x=>ml(x.m)),[{l:"Abaixo do recorde",d:dd,c:"#ff6b5b",area:1,fill:"rgba(255,107,91,.12)"}],{legend:false,pontos:false});
+ CH.cDD.options.scales.y.ticks.callback=v=>v+"%";CH.cDD.options.plugins.tooltip.callbacks.label=c=>` ${String(c.parsed.y).replace(".",",")}% abaixo do recorde`;CH.cDD.update();
+ $("ddComo").innerHTML=`<div class="kl">Como ler</div>
+  Na linha do zero, a carteira estava no maior valor que já teve dentro do período. Quanto mais fundo o vale, maior foi a queda antes de recuperar. Mostra o risco que você já viveu.<br>
+  <b>Resumo:</b> de ${RL[0]?ml(RL[0].m):"—"} para cá${RL[0]&&RL[0].m!==P.m0?" (quando a carteira passou de R$ 5 mil)":""}, a pior queda foi de <b>${ptxt(pior)}</b>${quando?` (${ml(quando)})`:""}. Hoje ela está ${atualDD<-0.05?`<b>${String(atualDD).replace(".",",")}% abaixo</b> do recorde`:"<b>no recorde</b>"}.
+  Nesse período, só o desempenho dos ativos rendeu <b>${ptxt(twr)} ao ano</b>.`;
+
+
+ // 6) instituições e maiores posições
+ const I={};for(const a of S.cart.ativos)I[a.instituicao]=(I[a.instituicao]||0)+a.valorAtual;
+ const ik=Object.keys(I).sort((a,b)=>I[b]-I[a]),cores=["#1d4ed8","#3ddc97","#ffcf2d","#c084fc","#38bdf8"];
+ chart("cInst","doughnut",ik.map(k=>`${k} · ${Math.round(I[k]/t.valor*100)}%`),[{l:"Valor",d:ik.map(k=>r2(I[k])),c:ik.map((k,i)=>cores[i%cores.length])}],{cutout:"58%"});
+ $("instComo").innerHTML=`<b>Resumo:</b> ${ik.map(k=>`${k} ${brl(I[k])} (${pct(I[k]/t.valor)})`).join(" · ")}.`;
+ const C={};for(const a of S.cart.ativos){const k=a.classe==="CDB"?"CDBs "+(a.nome||"").replace(/ S\.?A\.?$/,"").replace(/^BANCO /,""):a.codigo;C[k]=(C[k]||0)+a.valorAtual}
+ const ck=Object.keys(C).sort((a,b)=>C[b]-C[a]),hhi=ck.reduce((s,k)=>s+Math.pow(C[k]/t.valor,2),0),top=ck.slice(0,10);
+ $("concBox").style.height=Math.max(240,top.length*30+50)+"px";
+ chart("cConc","bar",top,[{l:"Valor",d:top.map(k=>r2(C[k])),c:"#3d8bff"}],{horizontal:1,legend:false});
+ CH.cConc.options.plugins.tooltip.callbacks.label=c=>` ${brl(c.parsed.x)} · ${pct(c.parsed.x/t.valor)} da carteira`;CH.cConc.update();
+ $("concHint").textContent=`${ck.length} posições`;
+ $("concComo").innerHTML=`<b>Resumo:</b> a maior posição é <b>${esc(ck[0])}</b>, com ${pct(C[ck[0]]/t.valor)} da carteira; as 10 maiores somam ${pct(top.reduce((s,k)=>s+C[k],0)/t.valor)}.
+  Na prática, o risco está espalhado como se fossem <b>${(1/hhi).toFixed(0)} ativos de mesmo tamanho</b> (índice de concentração Herfindahl-Hirschman).
+  ${ck.filter(k=>k.startsWith("CDBs ")).map(k=>`${esc(k)}: ${brl(C[k])}, dentro da garantia do FGC (até R$ 250 mil por banco).`).join(" ")}`;
+ aposRender(t);
+}
+
+
+/* aposentadoria: quanto juntar e onde a carteira chega com o aporte de hoje, em 3 cenários de rendimento real */
+function aposRender(t){
+ const cfg=S.cartCfg||{},media12=S.months.filter(m=>m.id>=addM(nowId(),-11)).reduce((s,m)=>s+(m.inv||0),0)/12;
+ const v={meta:+cfg.rendaMeta||6000,anos:+cfg.aposAnos||25,aporte:cfg.aposAporte??r2(media12),taxa:+cfg.aposTaxa||4};
+ for(const[k,id]of[["meta","apMeta"],["anos","apAnos"],["aporte","apAporte"],["taxa","apTaxa"]])if(document.activeElement!==$(id))$(id).value=v[k]||"";
+ const cap=v.meta*12/(v.taxa/100),P0=t.valor,N=v.anos,A=+v.aporte||0,ano0=+nowId().slice(0,4);
+ const cen=[["Pessimista",.03,"#ff6b5b"],["Moderado",.045,"#ffcf2d"],["Otimista",.06,"#3ddc97"]];
+ const proj=r=>{const rm=Math.pow(1+r,1/12)-1,out=[];let x=P0;out.push(r2(x));for(let y=1;y<=N;y++){for(let m=0;m<12;m++)x=x*(1+rm)+A;out.push(r2(x))}return out};
+ const lab=Array.from({length:N+1},(_,i)=>String(ano0+i));
+ chart("cApos","line",lab,[...cen.map(([n,r,c])=>({l:`${n} (${String(r*100).replace(".",",")}% real)`,d:proj(r),c})),
+  {l:"Capital necessário",d:lab.map(()=>r2(cap)),c:"rgba(255,255,255,.5)",dash:[6,4]}],{pontos:false});
+ const precisa=r=>{const rm=Math.pow(1+r,1/12)-1,k=Math.pow(1+rm,12*N);return Math.max(0,(cap-P0*k)/((k-1)/rm))};
+ $("tApos").innerHTML=`<thead><tr><th>Cenário</th><th class="n">Rendimento acima da inflação</th><th class="n">Patrimônio em ${ano0+N}</th><th class="n">Renda que ele paga</th><th class="n">Aporte necessário</th></tr></thead><tbody>${
+  cen.map(([n,r])=>{const fim=proj(r).at(-1);return`<tr><td>${n}</td><td class="n">${String(r*100).replace(".",",")}% ao ano</td><td class="n">${brl(fim)}</td>
+   <td class="n ${fim>=cap?"gain":"loss"}">${brl(fim*v.taxa/100/12)}/mês</td><td class="n">${brl(precisa(r))}/mês</td></tr>`}).join("")}</tbody>`;
+ const mod=proj(.045).at(-1);
+ $("aposNota").innerHTML=`<div class="kl">Como ler</div>
+  Cada linha colorida é um cenário: vermelho rende 3% ao ano acima da inflação, amarelo 4,5%, verde 6%. Se a linha passa da tracejada antes do fim, a meta é alcançada naquele cenário. Mude os campos acima para testar outros aportes e prazos.<br>
+  <b>Resumo:</b> para tirar <b>${brl(v.meta)} por mês</b> retirando ${String(v.taxa).replace(".",",")}% ao ano, você precisa de <b>${brl(cap)}</b>. Com ${brl(A)} por mês, no cenário do meio você chega a ${brl(mod)} em ${ano0+N} (${pct(mod/cap)} da meta); para chegar lá, o aporte precisaria ser de cerca de <b>${brl(precisa(.045))} por mês</b>.<br>
+  <span class="tiny">Tudo em dinheiro de hoje: os rendimentos são acima da inflação e o aporte deve subir com ela. Taxa de retirada segura de Bengen (1994); para o Brasil, 3,5% é mais conservador. O aporte inicial vem da média dos últimos 12 meses do orçamento. Projeção, não promessa.</span>`;
+}
+let tApos;["apMeta","apAnos","apAporte","apTaxa"].forEach(id=>$(id).oninput=()=>{clearTimeout(tApos);tApos=setTimeout(async()=>{
+ S.cartCfg={...S.cartCfg,rendaMeta:+$("apMeta").value||null,aposAnos:+$("apAnos").value||null,aposAporte:$("apAporte").value===""?null:+$("apAporte").value,aposTaxa:+$("apTaxa").value||null};
+ aposRender(tot());invRenda(renda12());
+ if(S.kind!=="demo")try{await setDoc(ccref(),S.cartCfg)}catch(e){toast(dberr(e),"no")}},600)});
+
+function realRender(real){
+ const E=S.cart.evolucao;$("realBox").classList.toggle("hide",!E);if(!E)return;
+ const R=E.realizado||[];
+ $("tReal").innerHTML=R.length?`<thead><tr><th>Ativo</th><th class="hs">Instituição</th><th>Última saída</th><th class="n hs">Custo</th><th class="n">Recebido</th><th class="n">Ganho</th></tr></thead><tbody>${
+  R.map(x=>`<tr><td>${esc(x.codigo)}${x.e?' <span class="chipx">estimado</span>':""}${x.encerrado?"":' <span class="chipx">venda parcial</span>'}</td><td class="hs tiny">${esc(x.instituicao)}</td>
+   <td class="tiny">${iso(x.data)}</td><td class="n hs tiny">${brl(x.custo)}</td><td class="n">${brl(x.recebido)}</td><td class="n ${gc(x.ganho)}">${sR(x.ganho)}</td></tr>`).join("")}</tbody>
+  <tfoot><tr><td colspan="2">Total</td><td class="hs"></td><td class="n hs">${brl(R.reduce((s,x)=>s+x.custo,0))}</td><td class="n">${brl(R.reduce((s,x)=>s+x.recebido,0))}</td><td class="n">${sR(real.vendas)}</td></tr></tfoot>`
+  :'<tbody><tr><td class="empty">Nenhuma venda ou resgate.</td></tr></tbody>';
+ const A=E.aConfirmar||[];
+ $("realNota").innerHTML=`"Estimado": CDBs do C6 comprados direto no banco — a data da aplicação vem do código do título e, quando a B3 mostra só o valor aplicado de volta, os juros são estimados a 100% do CDI.`+
+  (A.length?`<div style="margin-top:6px"><b>A confirmar (fora das contas):</b> ${A.map(x=>`${esc(x.codigo)} (${esc(x.nome.split(" ").slice(0,2).join(" "))}, ${brl(x.aplicado)} aplicados em ${iso(x.aplicadoEm)}, saiu em ${iso(x.saiu)})`).join(" · ")}. A B3 registrou a saída com valor zero; confirme se o dinheiro voltou.</div>`:"");
 }
 
 function invBalanco(t,val){
@@ -2212,13 +2521,18 @@ function invBalanco(t,val){
 }
 
 function invRenda(r){
- const P=S.cart.proventos||{},ms=Array.from({length:24},(_,i)=>addM(r.ult,i-23));
+ const P=S.cart.proventos||{},sr=S.cart.evolucao?.serie;
+ // meses do período de apuração escolhido (sem histórico mensal, os últimos 24)
+ const m0=sr?sr[perInicio(sr)].m:addM(r.ult,-23),ms=[];for(let m=m0;m<=r.ult;m=addM(m,1))ms.push(m);
+ // barras: proventos de cada mês; linha: média dos 12 meses anteriores (tira o efeito de meses com pagamento grande)
+ const mm12=m=>{let s=0;for(let i=0;i<12;i++)s+=P[addM(m,-i)]?.total||0;return r2(s/12)};
  chart("cInvRenda","bar",ms.map(ml),[{l:"Proventos",d:ms.map(m=>r2(P[m]?.total||0)),
-  c:ms.map(m=>m>=addM(r.ult,-11)?"#3ddc97":"rgba(61,220,151,.35)")}],{legend:false});
+  c:"#3ddc97"},
+  {l:"Média de 12 meses",d:ms.map(mm12),c:"#ffcf2d",type:"line"}],{pontos:false});
  const meta=+S.cartCfg?.rendaMeta||0;
  if(document.activeElement!==$("invMeta"))$("invMeta").value=meta||"";
  $("invMetaBar").style.width=meta?Math.min(100,r.media/meta*100)+"%":"0";
- $("invMetaTxt").textContent=meta?`${pct(r.media/meta)} da meta · faltam ${brl(Math.max(0,meta-r.media))}/mês`:"Defina uma meta para acompanhar o progresso. Barras mais apagadas: fora dos últimos 12 meses.";
+ $("invMetaTxt").textContent=meta?`${pct(r.media/meta)} da meta · faltam ${brl(Math.max(0,meta-r.media))}/mês`:"Defina uma meta para acompanhar o progresso. O gráfico segue o período de apuração escolhido no topo.";
 }
 
 function invAportes(){

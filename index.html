@@ -1808,7 +1808,7 @@ async function reload(){
  }catch(e){toast(dberr(e),"no");return}
  try{
   const[cd,cc,co,dg]=await Promise.all([getDoc(cdref()),getDoc(ccref()),getDocs(collection(db,"users",S.uid,"carteiraOps")),getDoc(dgref())]);
-  S.cart=cd.exists()?cd.data():null;S.cartCfg=cc.exists()?cc.data():{};S.diag=dg.exists()?dg.data():null;
+  S.cart=cd.exists()?cartDoBanco(cd.data()):null;S.cartCfg=cc.exists()?cc.data():{};S.diag=dg.exists()?dg.data():null;
   S.ops=co.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(b.criadoEm||"").localeCompare(a.criadoEm||""));
  }catch(e){S.cart=null;S.cartCfg={};S.ops=[];S.diag=null;console.warn("carteira:",e)}
  buildForm();dash();hist();compSel();comp();invRender();ratRender();
@@ -2740,7 +2740,7 @@ $("bOp").onclick=async()=>{
  busy($("bOp"),1);
  try{
   const b=writeBatch(db),mid=o.data.slice(0,7),m=S.months.find(x=>x.id===mid);
-  b.set(cdref(),{...S.cart,ativos});
+  b.set(cdref(),cartParaBanco({...S.cart,ativos}));
   // mês já lançado: soma direto no campo; mês ainda não lançado: fica pendente e aparece preenchido ao lançar
   b.set(doc(collection(db,"users",S.uid,"carteiraOps")),{...o,noOrcamento:noOrc,pendente:noOrc&&!m,criadoEm:new Date().toISOString()});
   if(noOrc&&m){const fields={...m.fields};fields.investimentos=r2((+fields.investimentos||0)+o.total);
@@ -2754,6 +2754,9 @@ $("bOp").onclick=async()=>{
 };
 
 $("bInvImp").onclick=()=>$("invFile").click();
+// o Firestore não aceita lista dentro de lista (os fluxos do histórico são assim): o histórico vai como texto
+function cartParaBanco(c){const{evolucao,...r}=c;return evolucao?{...r,evolucaoJson:JSON.stringify(evolucao)}:r}
+function cartDoBanco(c){const{evolucaoJson,...r}=c;if(evolucaoJson)try{r.evolucao=JSON.parse(evolucaoJson)}catch(_){}return r}
 $("invFile").onchange=async e=>{
  const f=e.target.files[0];e.target.value="";if(!f)return;
  let j;try{j=JSON.parse(await f.text())}catch(_){return toast("Esse arquivo não é um JSON válido.","no")}
@@ -2765,7 +2768,7 @@ $("invFile").onchange=async e=>{
  const{diagrama,...dados}=j,nd=diagrama?Object.keys(diagrama.ativos||{}).length:0;
  if(!confirm(`Importar a carteira de ${iso(j.dataBase)}?\n\n${ativos.length} ativos · ${brl(T)}${nd?`\nNotas do Diagrama para ${nd} ativos (as respostas que você mudou no app continuam valendo).`:""}${pend.length?`\n${ok} operação(ões) registrada(s) aqui depois disso serão mantidas.`:""}\n\nIsso substitui a carteira atual do app. Suas metas e o orçamento não mudam.`))return;
  busy($("bInvImp"),1);
- try{const b=writeBatch(db);b.set(cdref(),{...dados,ativos,importadoEm:new Date().toISOString()});if(diagrama)b.set(dgref(),diagrama);await b.commit();
+ try{const b=writeBatch(db);b.set(cdref(),cartParaBanco({...dados,ativos,importadoEm:new Date().toISOString()}));if(diagrama)b.set(dgref(),diagrama);await b.commit();
   await reload();toast(`Carteira importada: ${ativos.length} ativos, ${brl(T)}${nd?`, com notas para ${nd}`:""}.`,"ok")}
  catch(e){toast(dberr(e),"no")}finally{busy($("bInvImp"),0,"Importar carteira")}
 };

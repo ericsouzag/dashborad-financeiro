@@ -1718,6 +1718,7 @@ let S={uid:null,kind:null,months:[],boletos:[],schema:null,tx:null,edit:null};
 const $=i=>document.getElementById(i);
 const brl=n=>(n||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
 const MN=["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"];
+const CORES_CAT=["#3d8bff","#ffcf2d","#3ddc97","#ff6b5b","#c084fc","#22d3ee","#f472b6"];
 const ml=id=>{const[y,m]=id.split("-");return`${MN[+m-1]}/${y.slice(2)}`};
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const r2=n=>Math.round(n*100)/100;
@@ -2126,14 +2127,15 @@ function dash(){
   cats=pos.sort((a,b)=>b[1]-a[1]).map(([k,v])=>[k,r2(c6*v/tot)]);
   if(cats.length>7){const resto=cats.slice(6).reduce((s,[,v])=>s+v,0);cats=[...cats.slice(0,6),["Outras categorias",r2(resto)]]}}
  else if(c6)cats=[["Fatura do C6",c6]];
- const azuis=["#1d4ed8","#2563eb","#3b82f6","#6366f1","#818cf8","#a5b4fc","#93c5fd"];
- const parts=[...cats.map(([k,v],i)=>[k,v,azuis[i%azuis.length]]),...(fixas?[["Contas fixas",fixas,"#38bdf8"]]:[])];
+ // cores bem diferentes entre si, para não confundir as fatias
+ const azuis=CORES_CAT;
+ const parts=[...cats.map(([k,v],i)=>[k,v,azuis[i%azuis.length]]),...(fixas?[["Contas fixas",fixas,"#94a3b8"]]:[])];
  const pt=parts.reduce((s,p)=>s+p[1],0)||1;
  $("compTit").innerHTML=`Compras por categoria<span class="hint">${ml(last.id)}${bol?"":" · anexe o PDF da fatura para abrir o C6 por categoria"}</span>`;
  $("compLeg").innerHTML=parts.length?`
-  <div class="t"><span><span class="dot" style="background:#1d4ed8"></span>Cartão C6</span><span>${brl(c6)} · ${Math.round(c6/pt*100)}%</span></div>
+  <div class="t"><span><span class="dot" style="background:transparent;border:2px solid #fff"></span>Cartão C6</span><span>${brl(c6)} · ${Math.round(c6/pt*100)}%</span></div>
   ${cats.map(([k,v],i)=>`<div class="i"><span><span class="dot" style="background:${azuis[i%azuis.length]}"></span>${esc(k)}</span><span>${brl(v)}</span></div>`).join("")}
-  <div class="t"><span><span class="dot" style="background:#38bdf8"></span>Contas fixas</span><span>${brl(fixas)} · ${Math.round(fixas/pt*100)}%</span></div>`
+  <div class="t"><span><span class="dot" style="background:#94a3b8"></span>Contas fixas</span><span>${brl(fixas)} · ${Math.round(fixas/pt*100)}%</span></div>`
   :'<div class="tiny">Sem gastos no último mês.</div>';
  chart("cComp","doughnut",parts.map(p=>`${p[0]} · ${Math.round(p[1]/pt*100)}%`),
   [{l:"Valor",d:parts.map(p=>p[1]),c:parts.map(p=>p[2])}],{cutout:"58%",legend:false});
@@ -2192,7 +2194,7 @@ function comp(){
   {l:ml(id),d:keys.map(k=>r2(C[k]||0)),c:"#3d8bff"},
   {l:"Média",d:keys.map(k=>r2(A[k]||0)),c:"rgba(255,207,45,.6)"},
   {l:pv2?ml(pv2.id):"anterior",d:keys.map(k=>r2(P[k]||0)),c:"rgba(255,255,255,.2)"}]);
- const PAL=["#1d4ed8","#38bdf8","#ffcf2d","#c084fc","#3ddc97","#ff8a5b"];
+ const PAL=CORES_CAT;
  chart("cCatTrend","line",S.boletos.map(b=>ml(b.id)),
   keys.slice(0,6).map((k,i)=>({l:k,d:S.boletos.map(b=>r2(catSum(b)[k]||0)),c:PAL[i]})));
  $("tComp").innerHTML=`<thead><tr><th>Categoria</th><th class="n">Este mês</th><th class="n">Média</th>

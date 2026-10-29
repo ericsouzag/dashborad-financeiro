@@ -1714,7 +1714,7 @@ const DEMO_BOLETOS={
  }
 };
 
-let S={uid:null,kind:null,months:[],boletos:[],schema:null,tx:null,edit:null};
+let S={uid:null,kind:null,months:[],boletos:[],schema:null,tx:null,edit:null,novasPessoas:[]};
 const $=i=>document.getElementById(i);
 const brl=n=>(n||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
 const MN=["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"];
@@ -1771,7 +1771,7 @@ function aerr(c){return({"auth/invalid-credential":"E-mail ou senha incorretos."
 
 onAuthStateChanged(auth,async u=>{
  if(!u){$("login").classList.remove("hide");$("app").classList.add("hide");$("pdfpw").value="";
-  S={uid:null,kind:null,months:[],boletos:[],schema:null,tx:null,edit:null};return}
+  S={uid:null,kind:null,months:[],boletos:[],schema:null,tx:null,edit:null,novasPessoas:[]};return}
  S.uid=u.uid;S.kind=u.isAnonymous?"visitor":(u.email===DEMO_EMAIL?"demo":"owner");
  $("login").classList.add("hide");$("app").classList.remove("hide");
  mode();await reload();loadPdfPwd();
@@ -2897,7 +2897,6 @@ $("pTaxaModo").onchange=$("pPessoa").onchange=pPrev;
 function parcAtualiza(){parcRender();preenchePessoas($("mp").value);prev()}
 
 /* cadastro das pessoas: nomear quem já existe e adicionar outra */
-S.novasPessoas=[];
 function pessoasRender(){
  const ro=S.kind==="demo",P2=(S.schema||SCHEMA_V2).find(f=>f.vsItau),foco=document.activeElement?.id;
  // mantém o que já foi digitado e ainda não salvo

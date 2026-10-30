@@ -564,9 +564,36 @@ input[type=date]{width:100%;background:rgba(255,255,255,.04);border:1px solid va
           <div class="glass panel sec"><div class="st">Onde aportar</div>
             <div class="f" style="margin-top:12px;max-width:260px"><label for="invAporte">Quanto vai aportar agora (R$)</label>
               <input type="number" step="0.01" inputmode="decimal" id="invAporte" placeholder="ex.: 1000"></div>
+            <div class="row" style="gap:10px;flex-wrap:wrap;margin-top:4px">
+              <div class="f" style="max-width:150px"><label for="invResM">Reserva (meses de gasto)</label><input type="number" min="0" step="1" inputmode="numeric" id="invResM"></div>
+              <div class="f" style="max-width:170px"><label for="invResP">% de cada aporte para ela</label><input type="number" min="0" max="100" step="1" inputmode="numeric" id="invResP"></div></div>
+            <div class="tiny" id="invResTxt" style="line-height:1.5"></div>
+            <div id="invRev"></div>
             <div id="invSug"></div>
             <div class="tiny" id="invSugNota" style="margin-top:12px;line-height:1.5"></div>
           </div>
+        </div>
+
+        <div class="glass panel sec" id="rfBox"><div class="st">Comparar renda fixa<span class="hint">CDB × LCI/LCA, já descontado o IR</span></div>
+          <div class="lead">Coloque duas ofertas (por exemplo, as que o BTG mostra na hora de investir) e veja quanto cada uma deixa no seu bolso. LCI e LCA não pagam IR para pessoa física; CDB paga de 22,5% (até 6 meses) a 15% (mais de 2 anos), então a taxa do CDB precisa ser maior para empatar.</div>
+          <div class="fields">
+            <div class="f"><label for="rfValor">Valor (R$)</label><input type="number" step="100" inputmode="decimal" id="rfValor" value="1000"></div>
+            <div class="f"><label for="rfDias">Prazo (dias corridos)</label><input type="number" step="1" min="1" inputmode="numeric" id="rfDias" value="720"></div>
+            <div class="f"><label for="rfCdi">CDI esperado (% ao ano)</label><input type="number" step="0.05" inputmode="decimal" id="rfCdi"></div>
+            <div class="f"><label for="rfIpca">IPCA esperado (% ao ano)</label><input type="number" step="0.05" inputmode="decimal" id="rfIpca"></div>
+          </div>
+          <div class="g2" style="margin-top:14px">
+            <div><div class="kl">Oferta A</div><div class="fields" style="margin-top:6px">
+              <div class="f"><label for="rfTipoA">Tipo</label><select id="rfTipoA"><option value="cdb">CDB (paga IR)</option><option value="lci">LCI / LCA (isenta)</option></select></div>
+              <div class="f"><label for="rfIdxA">Rende</label><select id="rfIdxA"><option value="cdi">% do CDI</option><option value="pre">Prefixado (% ao ano)</option><option value="ipca">IPCA + (% ao ano)</option></select></div>
+              <div class="f"><label for="rfTaxaA">Taxa</label><input type="number" step="0.5" inputmode="decimal" id="rfTaxaA" value="110"></div></div></div>
+            <div><div class="kl">Oferta B</div><div class="fields" style="margin-top:6px">
+              <div class="f"><label for="rfTipoB">Tipo</label><select id="rfTipoB"><option value="cdb">CDB (paga IR)</option><option value="lci" selected>LCI / LCA (isenta)</option></select></div>
+              <div class="f"><label for="rfIdxB">Rende</label><select id="rfIdxB"><option value="cdi">% do CDI</option><option value="pre">Prefixado (% ao ano)</option><option value="ipca">IPCA + (% ao ano)</option></select></div>
+              <div class="f"><label for="rfTaxaB">Taxa</label><input type="number" step="0.5" inputmode="decimal" id="rfTaxaB" value="92"></div></div></div>
+          </div>
+          <div class="tw" style="margin-top:14px"><table id="tRf"></table></div>
+          <div class="como" id="rfComo"></div>
         </div>
 
         <div class="glass panel sec">
@@ -2272,7 +2299,7 @@ function invRender(){
   (tr?kpi("Rendimento ao ano",pct(tr.tir),`descontada a inflação: ${pct(tr.real)} · CDI no mesmo período: ${pct(tr.cdi)}`,tr.tir>=tr.cdi?"dn":"up",1):"")+
   kpi("Renda passiva — média",brl(r.media)+"/mês",`${brl(r.total)} nos últimos 12 meses`,"")+
   kpi("Proventos ÷ patrimônio",t.valor?pct(r.total/t.valor):"—","renda dos últimos 12 meses sobre o valor de hoje (não é a valorização)","",1);
- invBalanco(t,val);invRenda(r);invAportes();invDivisao(t);invSug();invTabela();invOps();evoRender(t,tr);realRender(real);
+ invBalanco(t,val);invRenda(r);invAportes();invDivisao(t);invSug();invTabela();invOps();evoRender(t,tr);realRender(real);rfRender();
 }
 
 /* ═══ EVOLUÇÃO, RENDIMENTO E RISCO ═══
@@ -2571,66 +2598,170 @@ let tMeta;$("invMeta").oninput=()=>{clearTimeout(tMeta);tMeta=setTimeout(async()
 /* ═══ DIAGRAMA: questionário sim/não por ativo (sim +1, não −1, n/a e "?" não contam) ═══ */
 const RESP={sim:"Sim",nao:"Não",na:"N/A"};
 function diagDe(cod){
- const base=S.diag?.ativos?.[cod];if(!base)return null;
+ const base=S.diag?.ativos?.[cod]||S.diag?.candidatos?.[cod];if(!base)return null;
  const Q=S.diag.questionarios?.[base.tipo];if(!Q)return null;
  const ed=S.cartCfg?.diagEdits?.[cod]||{};
  const itens=Q.perguntas.map(q=>{const r=base.respostas?.[q.id]||{resp:"na"};return{...q,...r,orig:r.resp,resp:ed[q.id]??r.resp,editado:ed[q.id]!==undefined&&ed[q.id]!==r.resp}});
  return{tipo:base.tipo,Q,itens,nota:itens.reduce((s,x)=>s+(x.resp==="sim"?1:x.resp==="nao"?-1:0),0)};
 }
 const notaDe=cod=>diagDe(cod)?.nota??null;
+// análise notícia feita pela skill revisar-aporte: {risco:"ok"|"atencao"|"alto", resumo, fontes[], data}
+const noticiaDe=cod=>S.diag?.noticias?.[cod]||null;
+const RISCO={ok:"sem alerta",atencao:"atenção",alto:"risco alto"};
+const diasDesde=d=>d?Math.floor((Date.now()-new Date(d))/864e5):null;
 const ntBtn=a=>{const n=notaDe(a.codigo);if(n===null)return'<span class="tiny">—</span>';
  return`<button class="nt ${n>0?"p":n<0?"n":"z"}" data-dg="${esc(a.codigo)}" title="Ver o questionário">${n>0?"+":""}${n}</button>`};
 
 /* itens de um grupo para dividir o aporte: o mesmo código em várias instituições vira um item; CDBs se agrupam pelo indexador */
-function itensGrupo(G){
+// regras combinadas depois do relatório da AUVP (30/10/2026):
+// ação de setor que não é perene fica fora do aporte; FII de papel ou fundo de fundos é evitado: conta 2 pontos a menos
+const EVITA_PAPEL=2;
+const foraSetor=cod=>diagDe(cod)?.itens.find(q=>q.id==="setor")?.resp==="nao";
+const tipoFiiDe=cod=>(S.diag?.ativos?.[cod]||S.diag?.candidatos?.[cod])?.tipoFii;
+const ehPapel=cod=>["papel","fundo de fundos"].includes(tipoFiiDe(cod));
+function itensGrupo(G,g){
  const M=new Map();
  for(const a of G.a){const cdb=a.classe==="CDB",k=cdb?"CDB "+(a.indexador||""):a.codigo,n=notaDe(a.codigo);
-  const x=M.get(k)||{k,valor:0,nota:null,preco:cdb||a.classe==="Tesouro Direto"?null:a.preco,ex:null};
+  const x=M.get(k)||{k,valor:0,nota:null,preco:cdb||a.classe==="Tesouro Direto"?null:a.preco,ex:null,not:cdb?null:noticiaDe(a.codigo)};
   x.valor+=a.valorAtual||0;
   if(n!==null&&(x.nota===null||n>x.nota)){x.nota=n;x.ex=a}
   M.set(k,x)}
+ // candidatos fora da carteira (ex.: sugestões da AUVP) entram com valor zero
+ for(const[cod,c]of Object.entries(S.diag?.candidatos||{}))if(c.grupo===g&&!M.has(cod))
+  M.set(cod,{k:cod,valor:0,nota:notaDe(cod),preco:c.preco||null,ex:{codigo:cod,classe:c.classe},not:noticiaDe(cod),cand:true});
+ for(const x of M.values()){const cod=x.ex?.codigo;x.setorFora=!!cod&&foraSetor(cod);x.papel=!!cod&&ehPapel(cod);
+  x.peso=x.nota===null?null:x.nota-(x.papel?EVITA_PAPEL:0)}
  return[...M.values()];
 }
 /* dentro do grupo: alvo de cada ativo proporcional à nota; o aporte cobre primeiro quem está mais abaixo do alvo */
-function divideGrupo(G,v){
- const todos=itensGrupo(G);let ok=todos.filter(x=>x.nota>0);if(!ok.length)return{ok,fora:todos.length};
- const fora=todos.length-ok.length,min=Math.max(5,v*.03);
+function divideGrupo(G,v,g){
+ const todos=itensGrupo(G,g),bloq=todos.filter(x=>x.nota>0&&x.not?.risco==="alto"),setor=todos.filter(x=>x.nota>0&&x.setorFora&&x.not?.risco!=="alto");
+ let ok=todos.filter(x=>x.peso>0&&x.not?.risco!=="alto"&&!x.setorFora);
+ const papelFora=todos.filter(x=>x.papel&&x.nota>0&&!(x.peso>0));
+ if(!ok.length)return{ok,fora:todos.filter(x=>!x.cand&&!bloq.includes(x)&&!setor.includes(x)&&!papelFora.includes(x)).length,bloq,setor,papelFora};
+ const fora=todos.filter(x=>!x.cand&&!ok.includes(x)&&!bloq.includes(x)&&!setor.includes(x)&&!papelFora.includes(x)).length,min=Math.max(5,v*.03);
  // valores pequenos demais (abaixo de R$ 5 ou de 3% do grupo) saem e o que sobra é redividido entre os demais
  for(let k=0;k<10;k++){
-  const sn=ok.reduce((s,x)=>s+x.nota,0),base=ok.reduce((s,x)=>s+x.valor,0)+v;
-  for(const x of ok)x.def=Math.max(0,x.nota/sn*base-x.valor);
+  const sn=ok.reduce((s,x)=>s+x.peso,0),base=ok.reduce((s,x)=>s+x.valor,0)+v;
+  for(const x of ok)x.def=Math.max(0,x.peso/sn*base-x.valor);
   const sd=ok.reduce((s,x)=>s+x.def,0);
-  for(const x of ok)x.v=sd?v*x.def/sd:v*x.nota/sn;
+  for(const x of ok)x.v=sd?v*x.def/sd:v*x.peso/sn;
   const fica=ok.filter(x=>x.v>=min);
   if(fica.length===ok.length||!fica.length)break;
   ok=fica;
  }
- return{ok:ok.filter(x=>x.v>=.5).sort((a,b)=>b.v-a.v),fora};
+ return{ok:ok.filter(x=>x.v>=.5).sort((a,b)=>b.v-a.v),fora,bloq,setor,papelFora};
 }
 
 function invSug(){
  const m=S.cartCfg?.metas||{},A=+$("invAporte").value,tem=!!S.diag;
+ const dAv=S.diag?.noticiasEm||S.diag?.geradoEm,idade=diasDesde(dAv),par=S.diag?.parecer;
+ $("invRev").innerHTML=!tem?"":`<div class="${idade>45?"loss":"tiny"}" style="margin-top:6px">${S.diag?.noticiasEm?"Revisão com análise notícia":"Notas da avaliação"} de ${iso(dAv.slice(0,10))} (há ${idade} ${idade===1?"dia":"dias"})${idade>45?": rode a skill revisar-aporte antes de aportar":""}.</div>`+
+  (par?.texto?`<div class="como" style="margin-top:10px"><div class="kl">Parecer da revisão</div>${esc(par.texto).replace(/\n/g,"<br>")}</div>`:"");
  $("invSugNota").textContent=tem
-  ?"Divide o valor entre os grupos para aproximar a carteira das suas metas. Dentro de cada grupo, só entram ativos com nota acima de zero, e cada um recebe proporcionalmente à nota, começando por quem está mais abaixo da sua parte. Não é recomendação de investimento."
+  ?"Primeiro separa a parte da reserva de emergência (até ela completar). O resto vai para os grupos, para aproximar a carteira das suas metas; a renda fixa ainda se divide entre IPCA+ (50%), prefixado (20%) e pós-fixado (30%). Dentro de cada grupo, só entram ativos com nota acima de zero, e cada um recebe proporcionalmente à nota, começando por quem está mais abaixo da sua parte. Ação de setor que não é perene fica de fora; FII de papel ou de fundos conta 2 pontos a menos, então só ganha de um de tijolo se for bem melhor. A etiqueta “novo” marca ativo que você ainda não tem (sugestões da AUVP avaliadas com as mesmas perguntas). Não é recomendação de investimento."
   :"Divide o valor entre os grupos para aproximar a carteira das metas que você definiu. Importe uma carteira com as notas do Diagrama para ver a divisão por ativo. Não é recomendação de investimento.";
+ resCampos();
  if(Math.abs(somaM(m)-100)>.01){$("invSug").innerHTML='<div class="tiny" style="padding:14px 0">Salve as metas da divisão (somando 100%) para ver a sugestão.</div>';return}
  if(!(A>0)){$("invSug").innerHTML='<div class="tiny" style="padding:14px 0">Digite um valor para ver como dividir entre os grupos.</div>';return}
- const t=tot(),T2=t.valor+A,def=Object.fromEntries(GRP.map(g=>[g,Math.max(0,(+m[g]||0)/100*T2-t.g[g].valor)])),sd=Object.values(def).reduce((s,v)=>s+v,0);
- $("invSug").innerHTML=GRP.map(g=>({g,v:sd?A*def[g]/sd:0})).filter(x=>x.v>=.5).sort((a,b)=>b.v-a.v).map(({g,v})=>{
+ const t=tot(),R=reservaInfo();
+ resCampos(R);
+ // 1) parte do aporte vai para a reserva de emergência até ela completar; a reserva fica fora das metas dos grupos
+ const vRes=r2(Math.min(A*R.pctA/100,R.falta)),A2=A-vRes;
+ const gv=g=>t.g[g].valor-(g==="Renda fixa"?R.atual:0),base=t.valor-R.atual,T2=base+A2;
+ const def=Object.fromEntries(GRP.map(g=>[g,Math.max(0,(+m[g]||0)/100*T2-gv(g))])),sd=Object.values(def).reduce((s,v)=>s+v,0);
+ const resBox=vRes>=.5?`<div class="sg"><div style="min-width:0"><span class="dot" style="background:#94a3b8"></span>Reserva de emergência
+   <div class="tiny" style="margin-top:3px">${R.pctA}% do aporte, até completar ${R.meses} meses de gasto</div></div>
+   <div class="kv" style="font-size:17px">${brl(vRes)}</div><div style="grid-column:1/-1;min-width:0"><div class="rk sgk" style="margin-top:8px">
+   <div><span class="nm">Tesouro Reserva ou Tesouro Selic<span class="tiny"> · resgate a qualquer hora, rende a Selic</span></span><span class="v">${brl(vRes)}</span><span class="pc"></span></div></div></div></div>`:"";
+ $("invSug").innerHTML=resBox+GRP.map(g=>({g,v:sd?A2*def[g]/sd:0})).filter(x=>x.v>=.5).sort((a,b)=>b.v-a.v).map(({g,v})=>{
   let det="";
-  if(tem){const d=divideGrupo(t.g[g],v);
-   det=d.ok.length?`<div class="rk sgk" style="margin-top:8px">${d.ok.map(x=>{
-     const q=x.preco>0?Math.floor(x.v/x.preco):0,ex=x.ex?.classe==="CDB"?` · ex.: vence ${esc(x.ex.vencimento||"")}`:"";
-     return`<div><span class="nm">${esc(x.k)}<span class="tiny"> · nota ${x.nota}${ex}</span></span><span class="v">${brl(x.v)}</span><span class="pc">${q?"≈ "+q+(q===1?" cota":" cotas"):""}</span></div>`}).join("")}</div>
-    ${d.fora?`<div class="tiny" style="margin-top:4px">${d.fora} ativo(s) do grupo com nota zero, negativa ou sem avaliação ficaram de fora.</div>`:""}`
-   :'<div class="tiny" style="margin-top:6px">Nenhum ativo deste grupo tem nota acima de zero. Avalie um ativo ou escolha um novo para este grupo.</div>'}
+  if(tem)det=g==="Renda fixa"?rfDet(t.g[g],v):detHtml(divideGrupo(t.g[g],v,g));
   else{const M=new Map();for(const a of t.g[g].a){const k=a.classe==="CDB"?"CDB "+(a.indexador||""):a.codigo,x=M.get(k)||{k,custo:0,proventos12m:0};x.custo+=a.custo||0;x.proventos12m+=a.proventos12m||0;M.set(k,x)}
    det=`<div class="tk">${[...M.values()].sort((a,b)=>yoc(b)-yoc(a)||b.custo-a.custo).slice(0,8).map(x=>`<span class="pill">${esc(x.k)}${yoc(x)?" · "+pct(yoc(x)):""}</span>`).join("")}</div>`}
   return`<div class="sg"><div style="min-width:0"><span class="dot" style="background:${GCOR[g]}"></span>${g}
-   <div class="tiny" style="margin-top:3px">de ${pct(t.g[g].valor/t.valor)} para ${pct((t.g[g].valor+v)/T2)} (meta ${m[g]}%)</div></div>
+   <div class="tiny" style="margin-top:3px">de ${pct(gv(g)/base)} para ${pct((gv(g)+v)/T2)} (meta ${m[g]}%)${g==="Renda fixa"&&R.atual?" · sem a reserva":""}</div></div>
    <div class="kv" style="font-size:17px">${brl(v)}</div><div style="grid-column:1/-1;min-width:0">${det}</div></div>`}).join("");
 }
+// lista de ativos de um grupo na sugestão, com quem ficou de fora e por quê
+function detHtml(d,vazio){
+ return(d.ok.length?`<div class="rk sgk" style="margin-top:8px">${d.ok.map(x=>{
+   const q=x.preco>0?Math.floor(x.v/x.preco):0,ex=x.ex?.classe==="CDB"?` · ex.: vence ${esc(x.ex.vencimento||"")}`:"";
+   return`<div><span class="nm">${esc(x.k)}${x.cand?' <span class="chipx">novo</span>':""}<span class="tiny"> · nota ${x.nota}${x.papel?` (papel: conta ${x.peso})`:""}${ex}${x.not?.risco==="atencao"?' · <span class="loss">atenção nas notícias</span>':""}</span></span><span class="v">${brl(x.v)}</span><span class="pc">${q?"≈ "+q+(q===1?" cota":" cotas"):""}</span></div>`}).join("")}</div>`
+  :`<div class="tiny" style="margin-top:6px">${vazio||"Nenhum ativo deste grupo tem nota acima de zero. Avalie um ativo ou escolha um novo para este grupo."}</div>`)+
+  (d.bloq?.length?`<div class="tiny loss" style="margin-top:4px">Fora por notícia: ${d.bloq.map(x=>`${esc(x.k)} (${esc(x.not.resumo||"risco alto")})`).join(" · ")}</div>`:"")+
+  (d.setor?.length?`<div class="tiny" style="margin-top:4px">Fora por setor não perene: ${d.setor.map(x=>esc(x.k)).join(", ")}.</div>`:"")+
+  (d.papelFora?.length?`<div class="tiny" style="margin-top:4px">FII de papel ou de fundos sem vantagem suficiente (conta ${EVITA_PAPEL} pontos a menos): ${d.papelFora.map(x=>esc(x.k)).join(", ")}.</div>`:"")+
+  (d.fora?`<div class="tiny" style="margin-top:4px">${d.fora} ativo(s) do grupo com nota zero, negativa ou sem avaliação ficaram de fora.</div>`:"");
+}
+/* reserva de emergência: meses de gasto (média do total líquido dos últimos 12 meses fechados) no Tesouro Selic ou Tesouro Reserva */
+const ehReserva=a=>a.grupo==="Renda fixa"&&(/reserva/i.test((a.nome||"")+" "+a.codigo)||(a.classe==="Tesouro Direto"&&/selic/i.test(a.indexador||"")));
+function reservaInfo(){
+ const cfg=S.cartCfg||{},meses=cfg.reservaMeses??6,pctA=cfg.reservaPct??20;
+ const u=S.months.filter(m=>m.id>=addM(nowId(),-12)&&m.id<nowId()&&m.liquido>0);
+ const gasto=u.length?u.reduce((s,m)=>s+m.liquido,0)/u.length:0;
+ const atual=(S.cart?.ativos||[]).filter(ehReserva).reduce((s,a)=>s+(a.valorAtual||0),0);
+ return{meses:+meses,pctA:+pctA,gasto,alvo:gasto*meses,atual,falta:Math.max(0,gasto*meses-atual),n:u.length};
+}
+function resCampos(R){
+ R=R||reservaInfo();
+ if(document.activeElement!==$("invResM"))$("invResM").value=R.meses;
+ if(document.activeElement!==$("invResP"))$("invResP").value=R.pctA;
+ const A=+$("invAporte").value||0,porAp=A*R.pctA/100,ap=porAp>0?Math.ceil(R.falta/porAp):null;
+ $("invResTxt").innerHTML=!R.gasto?"Lance alguns meses no orçamento para calcular o tamanho da reserva.":
+  R.falta<=0?`<span class="gain">Reserva completa:</span> ${brl(R.atual)} cobrem ${R.meses} meses do seu gasto médio (${brl(R.gasto)}).`:
+  `Reserva: ${brl(R.atual)} de ${brl(R.alvo)} (${R.meses} × gasto médio de ${brl(R.gasto)}, média de ${R.n} meses). Faltam ${brl(R.falta)}${ap?`; com ${R.pctA}% de um aporte deste tamanho (${brl(porAp)}), completa em cerca de ${ap} ${ap===1?"aporte":"aportes"}`:""}. Conta como reserva o que está no Tesouro Selic ou Tesouro Reserva.`;
+}
+let tRes;["invResM","invResP"].forEach(id=>$(id).oninput=()=>{const v=$(id).value;if(v===""||+v<0)return;
+ S.cartCfg={...S.cartCfg,[id==="invResM"?"reservaMeses":"reservaPct"]:Math.min(+v,id==="invResP"?100:120)};invSug();
+ clearTimeout(tRes);tRes=setTimeout(async()=>{if(S.kind!=="demo")try{await setDoc(ccref(),S.cartCfg)}catch(e){toast(dberr(e),"no")}},700)});
+/* renda fixa sem a reserva, dividida por indexador; metas internas da AUVP: IPCA+ 50%, prefixado 20%, pós-fixado 30% */
+const RF_SUB={IPCA:"IPCA+ (protege da inflação)",PRE:"Prefixado",POS:"Pós-fixado (CDI)"};
+const rfSubDe=a=>/ipca/i.test(a.indexador||"")?"IPCA":/pr[eé]/i.test(a.indexador||"")?"PRE":"POS";
+const rfSubMeta=()=>({IPCA:50,PRE:20,POS:30,...(S.cartCfg?.rfSub||{})});
+function rfDet(G,v){
+ const sm=rfSubMeta(),as=G.a.filter(a=>!ehReserva(a)),val={IPCA:0,PRE:0,POS:0};
+ for(const a of as)val[rfSubDe(a)]+=a.valorAtual||0;
+ const t0=Object.values(val).reduce((s,x)=>s+x,0),t1=t0+v;
+ const d=Object.fromEntries(Object.keys(val).map(k=>[k,Math.max(0,sm[k]/100*t1-val[k])])),sdd=Object.values(d).reduce((s,x)=>s+x,0);
+ return Object.keys(RF_SUB).map(k=>({k,v:sdd?v*d[k]/sdd:v*sm[k]/100})).filter(x=>x.v>=.5).map(x=>
+  `<div style="margin-top:10px"><div class="tiny"><b>${RF_SUB[x.k]}</b> · ${brl(x.v)} · hoje ${pct(t0?val[x.k]/t0:0)} da renda fixa (meta ${sm[x.k]}%)</div>${
+   detHtml(divideGrupo({a:as.filter(a=>rfSubDe(a)===x.k)},x.v,"Renda fixa"),x.k==="IPCA"?"Nenhum título IPCA+ da carteira tem nota acima de zero: compre um título novo (Tesouro IPCA+ ou Renda+, com vencimento perto da aposentadoria).":null)}</div>`).join("");
+}
 $("invAporte").oninput=invSug;
+
+/* comparador de renda fixa: rendimento líquido de duas ofertas no mesmo prazo
+   CDI e IPCA esperados vêm dos últimos 12 meses (Banco Central), editáveis; IR pela tabela regressiva (Lei 11.033/2004) */
+const aliqIR=d=>d<=180?.225:d<=360?.2:d<=720?.175:.15;
+function rfPadroes(){
+ const E=S.cart?.evolucao,ult=E?.meses?.at(-1);if(!E||!ult)return;
+ const a12=ref=>{let f=1;for(let i=0;i<12;i++)f*=1+(E.referencias[ref][addM(ult,-i)]||0);return r2((f-1)*100)};
+ if(!$("rfCdi").value)$("rfCdi").value=a12("cdi");if(!$("rfIpca").value)$("rfIpca").value=a12("ipca");
+}
+function rfRender(){
+ rfPadroes();
+ const V=+$("rfValor").value||0,D=+$("rfDias").value||0,cdi=(+$("rfCdi").value||0)/100,ipca=(+$("rfIpca").value||0)/100;
+ if(!(V>0&&D>0)){$("tRf").innerHTML="";$("rfComo").textContent="Preencha valor e prazo.";return}
+ const anos=D/365,du=D*252/365;
+ const bruto=(idx,tx)=>idx==="cdi"?Math.pow(1+(Math.pow(1+cdi,1/252)-1)*tx/100,du)-1
+  :idx==="pre"?Math.pow(1+tx/100,anos)-1:Math.pow((1+ipca)*(1+tx/100),anos)-1;
+ const of=["A","B"].map(k=>{const tipo=$("rfTipo"+k).value,idx=$("rfIdx"+k).value,tx=+$("rfTaxa"+k).value||0;
+  const b=bruto(idx,tx),ir=tipo==="cdb"?aliqIR(D):0,l=b*(1-ir);
+  return{k,tipo,idx,tx,b,ir,l,fim:V*(1+l),aa:Math.pow(1+l,1/anos)-1,
+   nome:(tipo==="cdb"?"CDB":"LCI/LCA")+" "+(idx==="cdi"?tx+"% do CDI":idx==="pre"?tx+"% ao ano":"IPCA + "+tx+"%")}});
+ const[A,B]=of,m=A.fim>=B.fim?A:B,o=m===A?B:A;
+ $("tRf").innerHTML=`<thead><tr><th>Oferta</th><th class="n">Rende bruto</th><th class="n">IR</th><th class="n">Fica com você</th><th class="n">Líquido ao ano</th></tr></thead><tbody>${
+  of.map(x=>`<tr><td>${x.k} · ${esc(x.nome)}${x===m&&A.fim!==B.fim?' <span class="chipx">rende mais</span>':""}</td><td class="n">${brl(V*x.b)}</td>
+   <td class="n tiny">${x.ir?"− "+brl(V*x.b*x.ir)+" ("+String(x.ir*100).replace(".",",")+"%)":"isento"}</td>
+   <td class="n" style="font-weight:600">${brl(x.fim)}</td><td class="n">${ptxt(x.aa)}</td></tr>`).join("")}</tbody>`;
+ // quanto o CDB precisa pagar (em % do CDI) para empatar com a isenta
+ let emp="";const c=of.find(x=>x.tipo==="cdb"),i=of.find(x=>x.tipo==="lci");
+ if(c&&i&&c.idx==="cdi"&&i.idx==="cdi"){let lo=0,hi=400;for(let n=0;n<60;n++){const md=(lo+hi)/2;if(bruto("cdi",md)*(1-aliqIR(D))<i.l)lo=md;else hi=md}
+  emp=`<br>Para empatar com a ${esc(i.nome)}, o CDB precisaria pagar <b>${lo.toFixed(1).replace(".",",")}% do CDI</b> nesse prazo.`}
+ $("rfComo").innerHTML=`<div class="kl">Resumo</div>${A.fim===B.fim?"As duas deixam o mesmo valor.":`Em ${D} dias, a oferta <b>${m.k}</b> deixa <b>${brl(m.fim-o.fim)}</b> a mais no seu bolso (${brl(m.fim)} contra ${brl(o.fim)}).`}${emp}
+  <br><span class="tiny">Simulação com CDI e IPCA constantes (os campos começam com os últimos 12 meses, do Banco Central). IR do CDB: 22,5% até 180 dias, 20% até 360, 17,5% até 720 e 15% acima. LCI/LCA têm carência mínima (hoje 12 meses na LCI e 9 na LCA) e, como o CDB, garantia do FGC até R$ 250 mil por banco. Resgate antes de 30 dias também paga IOF, que não entra aqui.</span>`;
+}
+["rfValor","rfDias","rfCdi","rfIpca","rfTipoA","rfIdxA","rfTaxaA","rfTipoB","rfIdxB","rfTaxaB"].forEach(id=>$(id).addEventListener("input",rfRender));
 
 /* painel do questionário de um ativo */
 function dgAbre(cod){
@@ -2641,6 +2772,9 @@ function dgAbre(cod){
    <div style="min-width:0"><div class="eyebrow">${esc(d.Q.titulo)}</div><h3 id="dgTit">${esc(cod.replace(/^CDB /,"CDB "))}</h3>
     <div class="tiny">${esc(a?.nome||"")}</div></div>
    <div style="text-align:right"><div class="kl">Nota</div><div class="kv ${d.nota>0?"gain":d.nota<0?"loss":""}" style="font-size:28px">${d.nota>0?"+":""}${d.nota}</div></div></div>
+  ${(()=>{const n=noticiaDe(cod);if(!n)return"";return`<div class="como" style="margin-top:10px"><div class="kl">Análise notícia · ${iso((n.data||"").slice(0,10))} · <span class="${n.risco==="ok"?"gain":"loss"}">${RISCO[n.risco]||n.risco}</span></div>${esc(n.resumo||"")}
+    ${n.risco==="alto"?"<br><b>Fica fora da divisão do aporte enquanto o risco for alto.</b>":""}
+    ${(n.fontes||[]).filter(u=>/^https?:\/\//.test(u)).length?`<div class="fo">Fontes: ${n.fontes.filter(u=>/^https?:\/\//.test(u)).map((u,i)=>`<a href="${esc(u)}" target="_blank" rel="noopener">${i+1}</a>`).join(" · ")}</div>`:""}</div>`})()}
   <div class="tiny" style="margin:10px 0 4px;line-height:1.5">${esc(d.Q.explica||"")} Sim soma 1, não tira 1; N/A e "?" não contam.${d.nota>0?" Este ativo entra na divisão do aporte.":" Com nota zero ou negativa, este ativo fica fora da divisão do aporte."}</div>
   ${d.itens.map((x,i)=>{const f=F[x.fonte];return`<div class="q"><div style="min-width:0"><div><b>P${i+1} · ${esc(x.crit)}.</b> ${esc(x.p)}</div>
     ${x.valor?`<div class="v">${esc(x.valor)}</div>`:""}${x.obs?`<div class="o">${esc(x.obs)}</div>`:""}

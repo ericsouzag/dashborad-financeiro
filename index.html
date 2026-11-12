@@ -300,7 +300,8 @@ input[type=date]{width:100%;background:rgba(255,255,255,.04);border:1px solid va
     </nav>
     <div class="side-foot">
       <div id="chipD" class="chip"><span class="d"></span><span>conta</span></div>
-      <button class="ghost" id="bOut" style="width:100%;margin-top:12px;font-size:13px">Sair</button>
+      <button class="ghost" id="bConta" style="width:100%;margin-top:12px;font-size:13px">Senha do PDF e conta</button>
+      <button class="ghost" id="bOut" style="width:100%;margin-top:8px;font-size:13px">Sair da conta</button>
     </div>
   </aside>
   <nav class="tabs">
@@ -316,7 +317,8 @@ input[type=date]{width:100%;background:rgba(255,255,255,.04);border:1px solid va
   <main>
     <section id="v-dash" class="view">
       <div class="head"><div><div class="eyebrow" id="period">carregando…</div><h1>Geral</h1></div>
-        <div id="chipM" class="chip"><span class="d"></span><span>conta</span></div></div>
+        <div class="row" style="margin:0;gap:8px;align-items:center"><div id="chipM" class="chip"><span class="d"></span><span>conta</span></div>
+          <button class="ghost mini" id="bContaM" aria-label="Senha do PDF e conta">Conta</button></div></div>
       <div class="glass panel sec kgrp"><div class="kpis k2" id="kpis"></div></div>
       <div class="glass panel sec"><div class="st">Evolução do total</div><div class="chart"><canvas id="cTot"></canvas></div></div>
       <div class="glass panel sec"><div class="st" id="compTit">Compras por categoria</div>
@@ -608,6 +610,25 @@ input[type=date]{width:100%;background:rgba(255,255,255,.04);border:1px solid va
           <div class="st">Vendas e resgates<span class="hint">ganho já realizado</span></div>
           <div class="tw" style="margin-top:12px;max-height:420px;overflow-y:auto"><table id="tReal"></table></div>
           <div class="tiny" id="realNota" style="margin-top:8px;line-height:1.5"></div>
+        </div>
+
+        <div id="ctOv" class="dg-ov hide" role="dialog" aria-modal="true" aria-labelledby="ctTit">
+          <div class="glass dg">
+            <div class="row" style="margin-top:0;justify-content:space-between;align-items:center"><h3 id="ctTit" style="margin:0">Conta</h3>
+              <button class="ghost mini" id="ctFecha">Fechar</button></div>
+            <div class="st" style="margin-top:16px">Senha do PDF da fatura</div>
+            <div class="tiny" style="line-height:1.5">É a senha que o C6 usa para proteger o PDF da fatura. O app usa essa senha para abrir o arquivo; se você marcar "lembrar", ela fica guardada só na sua conta.</div>
+            <div class="row" style="align-items:flex-end;gap:8px">
+              <div class="f" style="flex:1;min-width:180px;margin:0"><label for="ctPw">Senha do PDF</label><input type="password" id="ctPw" autocomplete="off"></div>
+              <button class="ghost mini" id="ctVer" aria-pressed="false">Mostrar</button></div>
+            <label class="chk" style="margin-top:8px"><input type="checkbox" id="ctRem"> Lembrar a senha nesta conta</label>
+            <div class="row" style="gap:8px"><button class="primary mini" id="ctSalva">Salvar senha</button>
+              <button class="ghost mini" id="ctApaga">Apagar senha salva</button></div>
+            <div class="tiny" id="ctMsg" style="margin-top:6px"></div>
+            <div class="st" style="margin-top:20px">Sair</div>
+            <div class="tiny" style="line-height:1.5">Se o app travar ou ficar carregando, sair e entrar de novo recarrega tudo da sua conta.</div>
+            <div class="row"><button class="ghost" id="ctSair">Sair da conta</button></div>
+          </div>
         </div>
 
         <div id="dgOv" class="dg-ov hide" role="dialog" aria-modal="true" aria-labelledby="dgTit">
@@ -1786,7 +1807,9 @@ $("bGuest").onclick=async()=>{busy($("bGuest"),1);
  try{await signInAnonymously(auth)}catch(x){lerr(x.code==="auth/admin-restricted-operation"
   ?"O login Anônimo não está ativado no Firebase (Authentication → Sign-in method → Anônimo).":aerr(x.code))}
  finally{busy($("bGuest"),0,"Criar meu próprio painel de teste")}};
-$("bOut").onclick=()=>signOut(auth);
+// sair mesmo se o app estiver travado: tenta o signOut e recarrega a página de qualquer jeito
+function sair(){Promise.race([signOut(auth),new Promise(ok=>setTimeout(ok,2000))]).finally(()=>location.reload())}
+$("bOut").onclick=sair;
 function busy(b,on,t){b.disabled=!!on;if(on)b.innerHTML='<span class="spin"></span>';else b.textContent=t}
 function lerr(m){const e=$("lerr");e.textContent=m;e.classList.add("show")}
 function aerr(c){return({"auth/invalid-credential":"E-mail ou senha incorretos.",
@@ -2792,6 +2815,28 @@ function dgAbre(cod){
  $("dgBox").querySelectorAll("[data-rv]").forEach(l=>l.onclick=e=>{e.preventDefault();dgMarca(cod,l.dataset.rv,null)});
 }
 document.body.appendChild($("dgOv")); // fora das seções, que têm efeitos que prendem o position:fixed
+document.body.appendChild($("ctOv"));
+function ctAbre(){
+ const ro=S.kind==="demo";
+ $("ctPw").value=$("pdfpw").value;$("ctPw").type="password";$("ctVer").textContent="Mostrar";$("ctVer").setAttribute("aria-pressed","false");
+ $("ctRem").checked=$("pdfRem").checked||!!S.pdfPwd;$("ctMsg").textContent=ro?"Na demonstração a senha não é salva.":S.pdfPwd?"Há uma senha salva nesta conta.":"Nenhuma senha salva nesta conta.";
+ for(const id of["ctSalva","ctApaga"])$(id).disabled=ro;
+ $("ctOv").classList.remove("hide");$("ctPw").focus();
+}
+const ctFecha=()=>$("ctOv").classList.add("hide");
+for(const id of["bConta","bContaM","chipD","chipM"])$(id).onclick=ctAbre;
+for(const id of["chipD","chipM"]){$(id).style.cursor="pointer";$(id).title="Senha do PDF e conta"}
+$("ctFecha").onclick=ctFecha;
+$("ctOv").onclick=e=>{if(e.target===$("ctOv"))ctFecha()};
+document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!$("ctOv").classList.contains("hide"))ctFecha()});
+$("ctVer").onclick=()=>{const v=$("ctPw").type==="password";$("ctPw").type=v?"text":"password";$("ctVer").textContent=v?"Esconder":"Mostrar";$("ctVer").setAttribute("aria-pressed",String(v))};
+$("ctSalva").onclick=async()=>{
+ const pwd=$("ctPw").value;$("pdfpw").value=pwd;$("pdfRem").checked=$("ctRem").checked&&!!pwd;
+ await savePdfPwd(pwd);
+ $("ctMsg").textContent=!pwd?"Campo vazio: o PDF será aberto sem senha.":$("ctRem").checked?"Senha salva nesta conta. Ela já vale para o próximo PDF.":"Senha guardada só até você sair ou recarregar a página.";
+};
+$("ctApaga").onclick=async()=>{$("pdfRem").checked=false;$("ctRem").checked=false;$("ctPw").value="";$("pdfpw").value="";await savePdfPwd("");$("ctMsg").textContent="Senha salva apagada."};
+$("ctSair").onclick=sair;
 function dgFecha(){$("dgOv").classList.add("hide")}
 $("dgOv").onclick=e=>{if(e.target===$("dgOv"))dgFecha()};
 document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!$("dgOv").classList.contains("hide"))dgFecha()});
